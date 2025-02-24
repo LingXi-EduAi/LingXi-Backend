@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.TokenMapper">
+    <resultMap id="TokenEntity" type="com.lxe.lx.pojo.TokenEntity">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="user_id" jdbcType="VARCHAR" property="userId" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="token" jdbcType="VARCHAR" property="token" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="ip" jdbcType="VARCHAR" property="ip" />
+        <result column="state" jdbcType="VARCHAR" property="state" />
+    </resultMap>
+    <sql id="tableName">
+        lx_token
+    </sql>
+    <insert id="insert" parameterType="com.lxe.lx.pojo.TokenEntity">
+        insert into lx_token
+        (id,
+         user_id,
+         name,
+         token,
+         update_time,
+         ip,
+         state
+        )values(
+                   #{id},
+                   #{userId},
+                   #{name},
+                   #{token},
+                   #{updateTime},
+                   #{ip},
+                   #{state}
+               )
+    </insert>
+    <delete id="deleteByToken" parameterType="java.lang.String">
+        delete from lx_token where token = #{token}
+    </delete>
+    <delete id="deleteById" parameterType="java.lang.String">
+        delete from lx_token where id = #{id}
+    </delete>
+    <select id="getEntity" parameterType="com.lxe.lx.domain.qo.TokenQO" resultType="com.lxe.lx.pojo.TokenEntity">
+        select *
+        from lx_token f
+        where f.token = #{token}
+          and TIMESTAMPDIFF(HOUR, f.update_time, NOW()) &lt; #{limitTime}
+    </select>
+    <select id="getEntityById" parameterType="java.lang.String" resultType="com.lxe.lx.pojo.TokenEntity">
+        select *
+        from lx_token f
+        where f.id = #{id}
+    </select>
+</mapper>

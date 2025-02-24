@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.CustomerMapper">
+    <resultMap id="Customer" type="com.lxe.lx.pojo.Customer">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="user_id" jdbcType="VARCHAR" property="userId" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="password" jdbcType="VARCHAR" property="password" />
+        <result column="garde" jdbcType="INTEGER" property="garde" />
+        <result column="age" jdbcType="INTEGER" property="age" />
+        <result column="phone_number" jdbcType="VARCHAR" property="phoneNumber" />
+        <result column="email" jdbcType="VARCHAR" property="email" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="update_id" jdbcType="VARCHAR" property="updateId" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="state" jdbcType="VARCHAR" property="state" />
+        <result column="version" jdbcType="INTEGER" property="version" />
+    </resultMap>
+    <sql id="tableName">
+        lx_customer
+    </sql>
+    <insert id="add" parameterType="com.lxe.lx.pojo.Customer">
+        insert into lx_customer
+        (id,
+         user_id,
+         name,
+         password,
+         grade,
+         age,
+         phone_number,
+         email,
+         create_time,
+         state,
+         version
+        )values(
+                   #{id},
+                   #{userId},
+                   #{name},
+                   #{password},
+                   #{grade},
+                   #{age},
+                   #{phoneNumber},
+                   #{email},
+                   #{createTime},
+                   #{state},
+                   #{version}
+               )
+    </insert>
+    <update id="edit" parameterType="com.lxe.lx.pojo.Customer">
+        update
+        lx_customer
+        set
+        <if test="userId !=null and userId !=''">
+            user_id = #{userId} ,
+        </if>
+        <if test="name !=null and name !=''">
+            name = #{name},
+        </if>
+        <if test="grade !=null and grade !=''">
+            grade = #{grade},
+        </if>
+        <if test="age !=null and age !=''">
+            age = #{age},
+        </if>
+        <if test="phoneNumber !=null and phoneNumber !=''">
+            phone_number = #{phoneNumber},
+        </if>
+        <if test="email !=null and email !=''">
+            email = #{email},
+        </if>
+        <if test="updateId !=null and updateId !=''">
+            update_id = #{updateId},
+        </if>
+        <if test="updateTime !=null and updateTime !=''">
+            update_time = #{updateTime},
+        </if>
+<!--        <if test="version !=null and version !=''">-->
+<!--            version = #{version},-->
+<!--        </if>-->
+        <if test="state !=null and state !=''">
+            state = #{state},
+        </if>
+        version = version+1
+        where
+        id = #{id}
+    </update>
+    <update id="editPassword" parameterType="com.lxe.lx.pojo.Customer">
+        update
+        lx_customer
+        set
+        <if test="password !=null and password !=''">
+            password = #{password},
+        </if>
+        version = version+1
+        where
+        user_id = #{userId}
+    </update>
+    <select id="getCustomerByUserId" resultMap="Customer" parameterType="java.lang.String">
+        select t.id,
+               t.user_id,
+               t.name,
+               t.password,
+               t.phone_number,
+               t.email,
+               t.create_time,
+               t.state,
+               t.version,
+               t.update_time,
+               t.update_id from lx_customer as t
+        where t.user_id = #{userId}
+    </select>
+    <select id="getCustomerByEmail" resultMap="Customer" parameterType="java.lang.String">
+        select t.id,
+               t.user_id,
+               t.name,
+               t.password,
+               t.phone_number,
+               t.email,
+               t.create_time,
+               t.update_time,
+               t.update_id from lx_customer as t
+        where t.email = #{email}
+    </select>
+    <select id="getCustomerByPhoneNumber" resultMap="Customer" parameterType="java.lang.String">
+        select t.id,
+               t.user_id,
+               t.name,
+               t.password,
+               t.phone_number,
+               t.email,
+               t.create_time,
+               t.state,
+               t.version,
+               t.update_time,
+               t.update_id from lx_customer as t
+        where t.phone_number = #{phoneNumber}
+    </select>
+    <select id="getCustomerById" resultMap="Customer" parameterType="java.lang.String">
+        select t.id,
+               t.user_id,
+               t.name,
+               t.password,
+               t.phone_number,
+               t.email,
+               t.create_time,
+               t.state,
+               t.version,
+               t.update_id,
+               t.update_time from lx_customer as t
+        where t.id= #{id}
+    </select>
+    <select id="countByUserIdAndNoId" parameterType="com.lxe.lx.pojo.Customer" resultType="java.lang.Integer">
+        select count(*)
+        from lx_customer f
+        where f.state='1'
+          and f.user_id = #{userId}
+          and f.id != #{id}
+    </select>
+    <select id="countByEmailAndNoId" parameterType="com.lxe.lx.pojo.Customer" resultType="java.lang.Integer">
+        select count(*)
+        from lx_customer f
+        where f.state='1'
+          and f.email = #{email}
+          and f.id != #{id}
+    </select>
+    <select id="countByPhoneNumberAndNoId" parameterType="com.lxe.lx.pojo.Customer" resultType="java.lang.Integer">
+        select count(*)
+        from lx_customer f
+        where f.state='1'
+          and f.phone_number = #{phoneNumber}
+          and f.id != #{id}
+    </select>
+    <delete id="deleteById" parameterType="java.lang.String">
+        delete from lx_customer where id = #{id}
+    </delete>
+
+</mapper>
