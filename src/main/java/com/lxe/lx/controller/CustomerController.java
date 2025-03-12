@@ -1,6 +1,12 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.domain.dto.ClassGroupingDTO;
+import com.lxe.lx.domain.dto.CustomerDTO;
+import com.lxe.lx.domain.dto.ValidDTO;
+import com.lxe.lx.domain.qo.ClassGroupingQO;
+import com.lxe.lx.domain.qo.CustomerQO;
+import com.lxe.lx.pojo.ClassGrouping;
 import com.lxe.lx.pojo.Customer;
 import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.service.CustomerService;
@@ -22,6 +28,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.lxe.lx.util.MD5;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/customer")
 public class CustomerController {
@@ -36,8 +44,8 @@ public class CustomerController {
     private RedisTemplate<String, TokenEntity> redisTemplate;
 
     @RequestMapping(value = "/add", method = RequestMethod.POST)
-//    public ResultConstant add(HttpServletRequest request, @RequestBody Customer customer) {
-    public ResultConstant add(HttpServletRequest request, Customer customer) {
+    public ResultConstant add(HttpServletRequest request, @RequestBody Customer customer) {
+//    public ResultConstant add(HttpServletRequest request, Customer customer) {
         if (customer == null || StringUtils.isBlank(customer.getUserId())) {
             return ResultConstant.illegalParams("账号不能为空");
         }else if(Tools.isValidEmail(customer.getUserId())){
@@ -99,8 +107,8 @@ public class CustomerController {
     }
     @Login
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
-//    public ResultConstant edit(HttpServletRequest request,@RequestBody Customer customer) {
-    public ResultConstant edit(HttpServletRequest request,Customer customer) {
+    public ResultConstant edit(HttpServletRequest request,@RequestBody Customer customer) {
+//    public ResultConstant edit(HttpServletRequest request,Customer customer) {
         if (customer == null || StringUtils.isBlank(customer.getUserId())) {
             return ResultConstant.illegalParams("账号不能为空");
         }else if(Tools.isValidEmail(customer.getUserId())){
@@ -162,8 +170,8 @@ public class CustomerController {
     }
 
     @RequestMapping(value = "/editPassword", method = RequestMethod.POST)
-//    public ResultConstant editPassword(HttpServletRequest request,@RequestBody Customer customer,String code) {
-    public ResultConstant editPassword(HttpServletRequest request,Customer customer,String code) {
+    public ResultConstant editPassword(HttpServletRequest request,@RequestBody Customer customer,String code) {
+//    public ResultConstant editPassword(HttpServletRequest request,Customer customer,String code) {
 
 //        if (customer == null || StringUtils.isBlank(customer.getUserId())) {
 //            return ResultConstant.illegalParams("账号不能为空");
@@ -262,6 +270,29 @@ public class CustomerController {
             return ResultConstant.error("注销失败");
         }
     }
+    @Login
+    @RequestMapping(value = "/list", method = RequestMethod.POST)
+    public ResultConstant list(HttpServletRequest request, @RequestBody CustomerQO customerQO) throws Exception {
+//    public ResultConstant list(HttpServletRequest request, CustomerQO customerQO) throws Exception {
 
+        ValidDTO validDTO = customerQO.validPageParams(customerQO);
+        if (!validDTO.getResult()) {
+            return ResultConstant.illegalParams(validDTO.getMsg());
+        }
+        try {
+            CustomerDTO customerDTO = new CustomerDTO();
+            int count = customerService.num(customerQO);
+            if (count > 0) {
+                List<Customer> list = customerService.list(customerQO);
+                customerDTO.setList(list);
+            }
+            return ResultConstant.success(customerDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            logger.error("list->error"+e.getMessage());
+            return ResultConstant.error("查询失败");
+        }
+    }
 
 }

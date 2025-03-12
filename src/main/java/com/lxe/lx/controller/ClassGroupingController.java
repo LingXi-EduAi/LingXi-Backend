@@ -37,15 +37,15 @@ public class ClassGroupingController {
 
     @Login
     @RequestMapping(value = "/add", method = RequestMethod.POST)
-//    public ResultConstant add(HttpServletRequest request, @RequestBody Customer customer) {
-    public ResultConstant add(HttpServletRequest request, ClassGrouping classGrouping) {
-        if (classGrouping == null || StringUtils.isBlank(classGrouping.getRule())) {
+    public ResultConstant add(HttpServletRequest request, @RequestBody ClassGrouping classGrouping) {
+//    public ResultConstant add(HttpServletRequest request, ClassGrouping classGrouping) {
+        if (classGrouping == null || StringUtils.isBlank(classGrouping.getClassRule())) {
             return ResultConstant.illegalParams("分班规则不能为空");
         } else if (StringUtils.isBlank(classGrouping.getName())) {
             return ResultConstant.illegalParams("姓名为空");
         } else if (classGrouping.getVolume() == null) {
             return ResultConstant.illegalParams("容量为空");
-        } else if (StringUtils.isBlank(classGrouping.getCondition())) {
+        } else if (StringUtils.isBlank(classGrouping.getClassCondition())) {
             return ResultConstant.illegalParams("分班条件为空");
         }
         try {
@@ -67,15 +67,15 @@ public class ClassGroupingController {
 
     @Login
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
-//    public ResultConstant edit(HttpServletRequest request,@RequestBody Customer customer) {
-    public ResultConstant edit(HttpServletRequest request, ClassGrouping classGrouping) {
-        if (classGrouping == null || StringUtils.isBlank(classGrouping.getRule())) {
+    public ResultConstant edit(HttpServletRequest request,@RequestBody ClassGrouping classGrouping) {
+//    public ResultConstant edit(HttpServletRequest request, ClassGrouping classGrouping) {
+        if (classGrouping == null || StringUtils.isBlank(classGrouping.getClassRule())) {
             return ResultConstant.illegalParams("分班规则不能为空");
         } else if (StringUtils.isBlank(classGrouping.getName())) {
             return ResultConstant.illegalParams("姓名为空");
         } else if (classGrouping.getVolume() == null) {
             return ResultConstant.illegalParams("容量为空");
-        } else if (StringUtils.isBlank(classGrouping.getCondition())) {
+        } else if (StringUtils.isBlank(classGrouping.getClassCondition())) {
             return ResultConstant.illegalParams("分班条件为空");
         } else if (StringUtils.isBlank(classGrouping.getId())) {
             return ResultConstant.illegalParams("id为空");
@@ -103,8 +103,8 @@ public class ClassGroupingController {
     }
     @Login
     @RequestMapping(value = "/list", method = RequestMethod.POST)
-//    public ResultConstant list(HttpServletRequest request, @RequestBody MusicQO musicQO) throws Exception {
-    public ResultConstant list(HttpServletRequest request, ClassGroupingQO classGroupingQO) throws Exception {
+    public ResultConstant list(HttpServletRequest request, @RequestBody ClassGroupingQO classGroupingQO) throws Exception {
+//    public ResultConstant list(HttpServletRequest request, ClassGroupingQO classGroupingQO) throws Exception {
 
         ValidDTO validDTO = classGroupingQO.validPageParams(classGroupingQO);
         if (!validDTO.getResult()) {
@@ -127,8 +127,8 @@ public class ClassGroupingController {
     }
     @Login
     @RequestMapping(value = "/detail", method = RequestMethod.POST)
-//    public ResultConstant detail(HttpServletRequest request,@RequestBody ClassGrouping classGrouping) {
-    public ResultConstant detail(HttpServletRequest request, ClassGrouping classGrouping) {
+    public ResultConstant detail(HttpServletRequest request,@RequestBody ClassGrouping classGrouping) {
+//    public ResultConstant detail(HttpServletRequest request, ClassGrouping classGrouping) {
         if (StringUtils.isBlank(classGrouping.getId())) {
             ResultConstant.illegalParams("id不能为空");
         }

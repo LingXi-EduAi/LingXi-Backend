@@ -6,6 +6,7 @@
         <result column="user_id" jdbcType="VARCHAR" property="userId" />
         <result column="name" jdbcType="VARCHAR" property="name" />
         <result column="password" jdbcType="VARCHAR" property="password" />
+        <result column="classId" jdbcType="VARCHAR" property="classId" />
         <result column="garde" jdbcType="INTEGER" property="garde" />
         <result column="age" jdbcType="INTEGER" property="age" />
         <result column="phone_number" jdbcType="VARCHAR" property="phoneNumber" />
@@ -25,6 +26,7 @@
          user_id,
          name,
          password,
+         class_id
          grade,
          age,
          phone_number,
@@ -37,6 +39,7 @@
                    #{userId},
                    #{name},
                    #{password},
+                   #{classId},
                    #{grade},
                    #{age},
                    #{phoneNumber},
@@ -55,6 +58,9 @@
         </if>
         <if test="name !=null and name !=''">
             name = #{name},
+        </if>
+        <if test="classId !=null and classId !=''">
+            class_id = #{classId},
         </if>
         <if test="grade !=null and grade !=''">
             grade = #{grade},
@@ -100,13 +106,16 @@
                t.user_id,
                t.name,
                t.password,
+               t.class_id,
+               t.grade,
+               t.age,
                t.phone_number,
                t.email,
                t.create_time,
                t.state,
                t.version,
-               t.update_time,
-               t.update_id from lx_customer as t
+               t.update_id,
+               t.update_time from lx_customer as t
         where t.user_id = #{userId}
     </select>
     <select id="getCustomerByEmail" resultMap="Customer" parameterType="java.lang.String">
@@ -114,11 +123,16 @@
                t.user_id,
                t.name,
                t.password,
+               t.class_id,
+               t.grade,
+               t.age,
                t.phone_number,
                t.email,
                t.create_time,
-               t.update_time,
-               t.update_id from lx_customer as t
+               t.state,
+               t.version,
+               t.update_id,
+               t.update_time from lx_customer as t
         where t.email = #{email}
     </select>
     <select id="getCustomerByPhoneNumber" resultMap="Customer" parameterType="java.lang.String">
@@ -126,13 +140,16 @@
                t.user_id,
                t.name,
                t.password,
+               t.class_id,
+               t.grade,
+               t.age,
                t.phone_number,
                t.email,
                t.create_time,
                t.state,
                t.version,
-               t.update_time,
-               t.update_id from lx_customer as t
+               t.update_id,
+               t.update_time from lx_customer as t
         where t.phone_number = #{phoneNumber}
     </select>
     <select id="getCustomerById" resultMap="Customer" parameterType="java.lang.String">
@@ -140,6 +157,9 @@
                t.user_id,
                t.name,
                t.password,
+               t.class_id,
+               t.grade,
+               t.age,
                t.phone_number,
                t.email,
                t.create_time,
@@ -173,5 +193,94 @@
     <delete id="deleteById" parameterType="java.lang.String">
         delete from lx_customer where id = #{id}
     </delete>
-
+    <select id="num" parameterType="com.lxe.lx.domain.qo.CustomerQO" resultType="java.lang.Integer">
+        select count(*) from lx_customer f
+        where 1 = 1
+        <!--        <if test='queryType != null and queryType == "0"'>-->
+        <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
+        <!--                and-->
+        <!--                (-->
+        <!--                f.entrustment_no like concat('%',#{condition} ,'%' )-->
+        <!--                )-->
+        <!--            </if>-->
+        <!--        </if>-->
+        <!--         <if test='queryType != null and queryType == "1"'>-->
+        <if test="name != null and name != ''">
+            and	f.name = #{name}
+        </if>
+        <if test="classId != null and classId != ''">
+            and	f.class_id = #{classId}
+        </if>
+        <if test="state != null and state != ''">
+            and	f.state = #{state}
+        </if>
+        <!--            <if test="status != null ">-->
+        <!--                and	f.status = #{status}-->
+        <!--            </if>-->
+        <!--            <if test="startTime != null and startTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d')>=	#{startTime}-->
+        <!--            </if>-->
+        <!--            <if test="endTime != null and endTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d') &lt;=	#{endTime}-->
+        <!--            </if>-->
+        <!--        </if>-->
+    </select>
+    <select id="list" parameterType="com.lxe.lx.domain.qo.CustomerQO" resultType="com.lxe.lx.pojo.Customer">
+        select t.id,
+        t.user_id,
+        t.name,
+        t.password,
+        t.class_id,
+        t.grade,
+        t.age,
+        t.phone_number,
+        t.email,
+        t.create_time,
+        t.state,
+        t.version,
+        t.update_id,
+        t.update_time
+        from lx_customer as t
+        where 1 = 1
+        <!--        <if test='queryType != null and queryType == "0"'>-->
+        <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
+        <!--                and-->
+        <!--                (-->
+        <!--                f.entrustment_no like concat('%',#{condition} ,'%' )-->
+        <!--                )-->
+        <!--            </if>-->
+        <!--        </if>-->
+        <!--         <if test='queryType != null and queryType == "1"'>-->
+        <if test="name != null and name != ''">
+            and	t.name = #{name}
+        </if>
+        <if test="classId != null and classId != ''">
+            and	t.class_id = #{classId}
+        </if>
+        <if test="state != null and state != ''">
+            and	t.state = #{state}
+        </if>
+        <!--            <if test="status != null ">-->
+        <!--                and	f.status = #{status}-->
+        <!--            </if>-->
+        <!--            <if test="startTime != null and startTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d')>=	#{startTime}-->
+        <!--            </if>-->
+        <!--            <if test="endTime != null and endTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d') &lt;=	#{endTime}-->
+        <!--            </if>-->
+        <!--        </if>-->
+        <if test='pageType != null and pageType == "1"'>
+            order by t.${orderField} ${orderRule} limit #{start},#{pageSize}
+        </if>
+    </select>
+    <update id="editList" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            update lx_customer f
+            <set>
+                f.class_id = #{item.classId},
+            </set>
+            where f.id = #{item.id}
+        </foreach>
+    </update>
 </mapper>

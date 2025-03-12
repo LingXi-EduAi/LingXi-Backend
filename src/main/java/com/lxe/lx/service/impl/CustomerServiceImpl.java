@@ -1,11 +1,17 @@
 package com.lxe.lx.service.impl;
 
+import com.lxe.lx.domain.qo.ClassGroupingQO;
+import com.lxe.lx.domain.qo.CustomerQO;
 import com.lxe.lx.mapper.CustomerMapper;
+import com.lxe.lx.pojo.ClassGrouping;
 import com.lxe.lx.pojo.Customer;
 import com.lxe.lx.service.CustomerService;
 import com.lxe.lx.util.ResultConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+
 @Service("CustomerService")
 public class CustomerServiceImpl implements CustomerService {
     @Autowired
@@ -75,6 +81,24 @@ public class CustomerServiceImpl implements CustomerService {
     public ResultConstant delete(String id)throws Exception{
         try{
             customerMapper.deleteById(id);
+            return ResultConstant.success("");
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultConstant.error(e.getMessage());
+        }
+    }
+    @Override
+    public int num(CustomerQO customerQO)throws Exception{
+        return customerMapper.num(customerQO);
+    }
+    @Override
+    public List<Customer> list(CustomerQO customerQO)throws Exception{
+        return customerMapper.list(customerQO);
+    }
+    @Override
+    public ResultConstant editList(List<Customer> studentList)throws Exception{
+        try{
+            customerMapper.editList(studentList);
             return ResultConstant.success("");
         }catch (Exception e){
             e.printStackTrace();

@@ -8,6 +8,7 @@ public class Customer {
     private String userId;
     private String name;
     private String password;
+    private String classId;
     private Integer grade;
     private Integer age;
     private String phoneNumber;

@@ -13,6 +13,10 @@ public class WebMvcTokenConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/customer/**");
+        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/LXClass/**");
+        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/token/**");
+        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/classGrouping/**");
+
     }
     @Override
     public void addCorsMappings(CorsRegistry registry) {

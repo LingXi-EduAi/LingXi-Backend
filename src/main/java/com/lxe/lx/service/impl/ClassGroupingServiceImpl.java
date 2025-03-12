@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service("ClassGrouping")
-public class ClassGroupingImpl implements ClassGroupingService {
+public class ClassGroupingServiceImpl implements ClassGroupingService {
     @Autowired
     private ClassGroupingMapper classGroupingMapper;
     @Override

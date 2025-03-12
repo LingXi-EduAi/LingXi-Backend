@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.lxe.lx.mapper.ClassGroupingMapper">
-    <resultMap id="ClassGrouping" type="com.lxe.lx.pojo.ClassGrouping">
+        <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.LXClassMapper">
+    <resultMap id="LXClass" type="com.lxe.lx.pojo.LXClass">
         <id column="id" jdbcType="VARCHAR" property="id" />
         <result column="name" jdbcType="VARCHAR" property="name" />
-        <result column="class_rule" jdbcType="VARCHAR" property="classRule" />
-        <result column="class_condition" jdbcType="VARCHAR" property="classCondition" />
-        <result column="volume" jdbcType="INTEGER" property="volume" />
+        <result column="information" jdbcType="VARCHAR" property="information" />
+        <result column="notice" jdbcType="VARCHAR" property="notice" />
+        <result column="class_grouping_id" jdbcType="VARCHAR" property="classGroupingId" />
+        <result column="teacher_id" jdbcType="VARCHAR" property="teacherId" />
         <result column="create_id" jdbcType="VARCHAR" property="createId" />
         <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
         <result column="update_id" jdbcType="VARCHAR" property="updateId" />
@@ -15,15 +16,16 @@
         <result column="version" jdbcType="INTEGER" property="version" />
     </resultMap>
     <sql id="tableName">
-        lx_class_grouping
+        lx_class
     </sql>
-    <insert id="add" parameterType="com.lxe.lx.pojo.ClassGrouping">
-        insert into lx_class_grouping
+    <insert id="add" parameterType="com.lxe.lx.pojo.LXClass">
+        insert into lx_class
         (id,
          name,
-         class_rule,
-         class_condition,
-         volume,
+         information,
+         notice,
+         class_grouping_id,
+         teacher_id,
          create_id,
          create_time,
          state,
@@ -31,31 +33,36 @@
         )values(
                    #{id},
                    #{name},
-                   #{classRule},
-                   #{classCondition},
-                   #{volume},
+                   #{information},
+                   #{notice},
+                   #{classGroupingId},
+                   #{teacherId},
                    #{createId},
                    #{createTime},
                    #{state},
                    #{version}
                )
     </insert>
-    <update id="edit" parameterType="com.lxe.lx.pojo.ClassGrouping">
+    <update id="edit" parameterType="com.lxe.lx.pojo.Customer">
         update
-        lx_class_grouping
+        lx_class
         set
         <if test="name !=null and name !=''">
             name = #{name},
         </if>
-        <if test="classRule !=null and classRule !=''">
-            class_rule = #{classRule},
+        <if test="information !=null and information !=''">
+            information = #{information},
         </if>
-        <if test="classCondition !=null and classCondition !=''">
-            class_condition = #{classCondition},
+        <if test="notice !=null and notice !=''">
+            notice = #{notice},
         </if>
-        <if test="volume !=null and volume !=''">
-            volume = #{volume},
+        <if test="classGroupingId !=null and classGroupingId !=''">
+            class_grouping_id = #{classGroupingId},
         </if>
+        <if test="teacherId !=null and teacherId !=''">
+            teacher_id = #{teacherId},
+        </if>
+
         <if test="updateId !=null and updateId !=''">
             update_id = #{updateId},
         </if>
@@ -72,8 +79,38 @@
         where
         id = #{id}
     </update>
-    <select id="num" parameterType="com.lxe.lx.domain.qo.ClassGroupingQO" resultType="java.lang.Integer">
-        select count(*) from lx_class_grouping f
+    <select id="getLXClassByUserName" resultMap="LXClass" parameterType="java.lang.String">
+        select t.id,
+               t.name,
+               t.information,
+               t.notice,
+               t.class_grouping_id as classGroupingId,
+               t.teacher_id as teacherId,
+               t.create_id as createId,
+               t.create_time as createTime,
+               t.update_id as updateId,
+               t.update_time as updateTime,
+               t.state,
+               t.version from lx_class as t
+        where t.name = #{name}
+    </select>
+    <select id="getLXClassById" resultMap="LXClass" parameterType="java.lang.String">
+        select t.id,
+               t.name,
+               t.information,
+               t.notice,
+               t.class_grouping_id,
+               t.teacher_id,
+               t.create_id,
+               t.create_time,
+               t.update_id,
+               t.update_time,
+               t.state,
+               t.version from lx_class as t
+        where t.id = #{id}
+    </select>
+    <select id="num" parameterType="com.lxe.lx.domain.qo.LXClassQO" resultType="java.lang.Integer">
+        select count(*) from lx_class f
         where 1 = 1
         <!--        <if test='queryType != null and queryType == "0"'>-->
         <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
@@ -87,14 +124,11 @@
         <if test="name != null and name != ''">
             and	f.name = #{name}
         </if>
-        <if test="classRule != null and classRule != ''">
-            and	f.class_rule = #{classRule}
+        <if test="classGroupingId != null and classGroupingId != ''">
+            and	f.class_grouping_id = #{classGroupingId}
         </if>
-        <if test="classCondition != null and classCondition != ''">
-            and	f.class_condition = #{classCondition}
-        </if>
-        <if test="volume != null and volume != ''">
-            and	f.volume = #{volume}
+        <if test="teacherId != null and teacherId != ''">
+            and	f.teacher_id = #{teacherId}
         </if>
         <if test="state != null and state != ''">
             and	f.state = #{state}
@@ -110,19 +144,20 @@
         <!--            </if>-->
         <!--        </if>-->
     </select>
-    <select id="list" parameterType="com.lxe.lx.domain.qo.ClassGroupingQO" resultType="com.lxe.lx.pojo.ClassGrouping">
-        select f.id,
-        f.name,
-        f.class_rule,
-        f.class_condition,
-        f.volume,
-        f.create_id,
-        f.create_time,
-        f.update_id,
-        f.update_time,
-        f.state,
-        f.version
-        from lx_class_grouping f
+    <select id="list" parameterType="com.lxe.lx.domain.qo.CustomerQO" resultType="com.lxe.lx.pojo.Customer">
+        select t.id,
+        t.name,
+        t.information,
+        t.notice,
+        t.class_grouping_id,
+        t.teacher_id,
+        t.create_id,
+        t.create_time,
+        t.update_id,
+        t.update_time,
+        t.state,
+        t.version
+        from lx_class as t
         where 1 = 1
         <!--        <if test='queryType != null and queryType == "0"'>-->
         <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
@@ -136,14 +171,11 @@
         <if test="name != null and name != ''">
             and	f.name = #{name}
         </if>
-        <if test="classRule != null and classRule != ''">
-            and	f.class_rule = #{classRule}
+        <if test="classGroupingId != null and classGroupingId != ''">
+            and	f.class_grouping_id = #{classGroupingId}
         </if>
-        <if test="classCondition != null and classCondition != ''">
-            and	f.class_condition = #{classCondition}
-        </if>
-        <if test="volume != null and volume != ''">
-            and	f.volume = #{volume}
+        <if test="teacherId != null and teacherId != ''">
+            and	f.teacher_id = #{teacherId}
         </if>
         <if test="state != null and state != ''">
             and	f.state = #{state}
@@ -159,24 +191,10 @@
         <!--            </if>-->
         <!--        </if>-->
         <if test='pageType != null and pageType == "1"'>
-            order by f.${orderField} ${orderRule} limit #{start},#{pageSize}
+            order by t.${orderField} ${orderRule} limit #{start},#{pageSize}
         </if>
     </select>
-    <select id="getClassGroupingById" resultMap="ClassGrouping" parameterType="java.lang.String">
-        select f.id,
-               f.name,
-               f.class_rule,
-               f.class_condition,
-               f.volume,
-               f.create_id,
-               f.create_time,
-               f.update_id,
-               f.update_time,
-               f.state,
-               f.version from lx_class_grouping as f
-        where f.id= #{id}
-    </select>
     <delete id="deleteById" parameterType="java.lang.String">
-        delete from lx_class_grouping where id = #{id}
+        delete from lx_class where id = #{id}
     </delete>
 </mapper>

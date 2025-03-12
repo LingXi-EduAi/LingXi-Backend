@@ -5,11 +5,9 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ClassGroupingQO extends BaseListQO{
+public class CustomerQO extends BaseListQO{
     private String name;
-    private String classRule;
-    private String classCondition;
-    private Integer volume;
+    private String classId;
     private String state;
     /**
      * 是否进行分页0-不分1-分

@@ -42,8 +42,8 @@ public class TokenController {
     private static final String TOKEN_PREFIX = "token:";
 
     @RequestMapping(value = "/login", method = RequestMethod.POST)
-//    public ResultConstant login(HttpServletRequest request, @RequestBody Customer customer) {
-    public ResultConstant login(HttpServletRequest request, Customer customer) {
+    public ResultConstant login(HttpServletRequest request, @RequestBody Customer customer) {
+//    public ResultConstant login(HttpServletRequest request, Customer customer) {
 
         if (customer == null || StringUtils.isBlank(customer.getUserId())) {
             return ResultConstant.illegalParams("用户名不能为空");
