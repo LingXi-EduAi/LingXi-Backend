@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.HomeworkMapper">
+    <resultMap id="Customer" type="com.lxe.lx.pojo.Customer">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="content" jdbcType="VARCHAR" property="content" />
+        <result column="file_address" jdbcType="VARCHAR" property="fileAddress" />
+        <result column="student_id" jdbcType="VARCHAR" property="studentId" />
+        <result column="create_id" jdbcType="VARCHAR" property="createId" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="update_id" jdbcType="VARCHAR" property="updateId" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="state" jdbcType="VARCHAR" property="state" />
+        <result column="version" jdbcType="INTEGER" property="version" />
+    </resultMap>
+    <sql id="tableName">
+        lx_homework
+    </sql>
+    <insert id="add" parameterType="com.lxe.lx.pojo.Homework">
+        insert into lx_customer
+        (id,
+         name,
+         content,
+         file_address,
+         student_id,
+         create_id,
+         create_time,
+         state,
+         version
+        )values(
+                   #{id},
+                   #{name},
+                   #{content},
+                   #{fileAddress},
+                   #{studentId},
+                   #{createId},
+                   #{createTime},
+                   #{state},
+                   #{version}
+               )
+    </insert>
+    <update id="edit" parameterType="com.lxe.lx.pojo.Homework">
+        update
+        lx_homework
+        set
+        <if test="name !=null and name !=''">
+            name = #{name},
+        </if>
+        <if test="content !=null and content !=''">
+            content = #{content},
+        </if>
+        <if test="fileAddress !=null and fileAddress !=''">
+            file_address = #{fileAddress},
+        </if>
+        <if test="studentId !=null and studentId !=''">
+            student_id = #{studentId},
+        </if>
+        <if test="updateId !=null and updateId !=''">
+            update_id = #{updateId},
+        </if>
+        <if test="updateTime !=null and updateTime !=''">
+            update_time = #{updateTime},
+        </if>
+        <!--        <if test="version !=null and version !=''">-->
+        <!--            version = #{version},-->
+        <!--        </if>-->
+        <if test="state !=null and state !=''">
+            state = #{state},
+        </if>
+        version = version+1
+        where
+        id = #{id}
+    </update>
+    <select id="getHomeworkById" resultMap="Homework" parameterType="java.lang.String">
+        select t.id,
+               t.name,
+               t.content,
+               t.file_address,
+               t.student_id,
+               t.create_id,
+               t.create_time,
+               t.update_id,
+               t.update_time,
+               t.state,
+               t.version from lx_homework as t
+        where t.id= #{id}
+    </select>
+    <delete id="deleteById" parameterType="java.lang.String">
+        delete from lx_homework where id = #{id}
+    </delete>
+
+    <select id="num" parameterType="com.lxe.lx.domain.qo.HomeworkQO" resultType="java.lang.Integer">
+        select count(*) from lx_homework f
+        where 1 = 1
+        <!--        <if test='queryType != null and queryType == "0"'>-->
+        <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
+        <!--                and-->
+        <!--                (-->
+        <!--                f.entrustment_no like concat('%',#{condition} ,'%' )-->
+        <!--                )-->
+        <!--            </if>-->
+        <!--        </if>-->
+        <!--         <if test='queryType != null and queryType == "1"'>-->
+        <if test="name != null and name != ''">
+            and	f.name = #{name}
+        </if>
+        <if test="classId != null and classId != ''">
+            and	f.student_id = #{studentId}
+        </if>
+        <if test="state != null and state != ''">
+            and	f.state = #{state}
+        </if>
+        <!--            <if test="status != null ">-->
+        <!--                and	f.status = #{status}-->
+        <!--            </if>-->
+        <!--            <if test="startTime != null and startTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d')>=	#{startTime}-->
+        <!--            </if>-->
+        <!--            <if test="endTime != null and endTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d') &lt;=	#{endTime}-->
+        <!--            </if>-->
+        <!--        </if>-->
+    </select>
+    <select id="list" parameterType="com.lxe.lx.domain.qo.HomeworkQO" resultType="com.lxe.lx.pojo.Homework">
+        select t.id,
+        t.name,
+        t.content,
+        t.file_address,
+        t.student_id,
+        t.create_id,
+        t.create_time,
+        t.update_id,
+        t.update_time,
+        t.state,
+        t.version
+        from lx_homework as t
+        where 1 = 1
+        <!--        <if test='queryType != null and queryType == "0"'>-->
+        <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
+        <!--                and-->
+        <!--                (-->
+        <!--                f.entrustment_no like concat('%',#{condition} ,'%' )-->
+        <!--                )-->
+        <!--            </if>-->
+        <!--        </if>-->
+        <!--         <if test='queryType != null and queryType == "1"'>-->
+        <if test="name != null and name != ''">
+            and	t.name = #{name}
+        </if>
+        <if test="classId != null and classId != ''">
+            and	t.student_id = #{studentId}
+        </if>
+        <if test="state != null and state != ''">
+            and	t.state = #{state}
+        </if>
+        <!--            <if test="status != null ">-->
+        <!--                and	f.status = #{status}-->
+        <!--            </if>-->
+        <!--            <if test="startTime != null and startTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d')>=	#{startTime}-->
+        <!--            </if>-->
+        <!--            <if test="endTime != null and endTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d') &lt;=	#{endTime}-->
+        <!--            </if>-->
+        <!--        </if>-->
+        <if test='pageType != null and pageType == "1"'>
+            order by t.${orderField} ${orderRule} limit #{start},#{pageSize}
+        </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,20 @@
+package com.lxe.lx.pojo;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class Homework {
+    private String id;
+    private String name;
+    private String content;
+    private String fileAddress;
+    private String studentId;
+    private String createId;
+    private String createTime;
+    private String updateId;
+    private String updateTime;
+    private String state;
+    private Integer version;
+}
