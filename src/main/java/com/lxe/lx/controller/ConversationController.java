@@ -29,7 +29,7 @@ import java.util.List;
 import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
 
 @RestController
-@RequestMapping("/conversationController")
+@RequestMapping("/conversation")
 public class ConversationController {
     Logger logger = LogManager.getLogger(ConversationController.class);
 

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.ClassGroupingMapper">
+    <resultMap id="Document" type="com.lxe.lx.pojo.Document">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="type" jdbcType="VARCHAR" property="type" />
+        <result column="describe" jdbcType="VARCHAR" property="describe" />
+        <result column="file_address" jdbcType="VARCHAR" property="fileAddress" />
+        <result column="create_id" jdbcType="VARCHAR" property="createId" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="update_id" jdbcType="VARCHAR" property="updateId" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="state" jdbcType="VARCHAR" property="state" />
+        <result column="version" jdbcType="INTEGER" property="version" />
+    </resultMap>
+    <sql id="tableName">
+        lx_document
+    </sql>
+    <insert id="add" parameterType="com.lxe.lx.pojo.Document">
+        insert into lx_document
+        (id,
+         name,
+         type,
+         describe,
+         file_address,
+         create_id,
+         create_time,
+         state,
+         version
+        )values(
+                   #{id},
+                   #{name},
+                   #{type},
+                   #{describe},
+                   #{fileAddress},
+                   #{createId},
+                   #{createTime},
+                   #{state},
+                   #{version}
+               )
+    </insert>
+    <update id="edit" parameterType="com.lxe.lx.pojo.Document">
+        update
+        lx_document
+        set
+        <if test="name !=null and name !=''">
+            name = #{name},
+        </if>
+        <if test="type !=null and type !=''">
+            type = #{type},
+        </if>
+        <if test="describe !=null and describe !=''">
+            describe = #{describe},
+        </if>
+        <if test="fileAddress !=null and fileAddress !=''">
+            file_address = #{fileAddress},
+        </if>
+        <if test="updateId !=null and updateId !=''">
+            update_id = #{updateId},
+        </if>
+        <if test="updateTime !=null and updateTime !=''">
+            update_time = #{updateTime},
+        </if>
+        <!--        <if test="version !=null and version !=''">-->
+        <!--            version = #{version},-->
+        <!--        </if>-->
+        <if test="state !=null and state !=''">
+            state = #{state},
+        </if>
+        version = version+1
+        where
+        id = #{id}
+    </update>
+
+    <select id="getDocumentById" resultMap="Document" parameterType="java.lang.String">
+        select t.id,
+               t.name,
+               t.type,
+               t.describe,
+               t.file_address,
+               t.create_id,
+               t.create_time,gh
+               t.update_id,
+               t.update_time,
+               t.state,
+               t.version from lx_customer as t
+        where t.id= #{id}
+    </select>
+    <delete id="deleteById" parameterType="java.lang.String">
+        delete from lx_document where id = #{id}
+    </delete>
+    <select id="num" parameterType="com.lxe.lx.domain.qo.DocumentQO" resultType="java.lang.Integer">
+        select count(*) from lx_document f
+        where 1 = 1
+        <!--        <if test='queryType != null and queryType == "0"'>-->
+        <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
+        <!--                and-->
+        <!--                (-->
+        <!--                f.entrustment_no like concat('%',#{condition} ,'%' )-->
+        <!--                )-->
+        <!--            </if>-->
+        <!--        </if>-->
+        <!--         <if test='queryType != null and queryType == "1"'>-->
+        <if test="name != null and name != ''">
+            and	f.name = #{name}
+        </if>
+        <if test="type != null and type != ''">
+            and	f.type = #{type}
+        </if>
+        <if test="state != null and state != ''">
+            and	f.state = #{state}
+        </if>
+        <!--            <if test="status != null ">-->
+        <!--                and	f.status = #{status}-->
+        <!--            </if>-->
+        <!--            <if test="startTime != null and startTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d')>=	#{startTime}-->
+        <!--            </if>-->
+        <!--            <if test="endTime != null and endTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d') &lt;=	#{endTime}-->
+        <!--            </if>-->
+        <!--        </if>-->
+    </select>
+    <select id="list" parameterType="com.lxe.lx.domain.qo.DocumentQO" resultType="com.lxe.lx.pojo.Document">
+        select t.id,
+        t.name,
+        t.type,
+        t.describe,
+        t.file_address,
+        t.create_id,
+        t.create_time,gh
+        t.update_id,
+        t.update_time,
+        t.state,
+        t.version
+        from lx_document as t
+        where 1 = 1
+        <!--        <if test='queryType != null and queryType == "0"'>-->
+        <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
+        <!--                and-->
+        <!--                (-->
+        <!--                f.entrustment_no like concat('%',#{condition} ,'%' )-->
+        <!--                )-->
+        <!--            </if>-->
+        <!--        </if>-->
+        <!--         <if test='queryType != null and queryType == "1"'>-->
+        <if test="name != null and name != ''">
+            and	f.name = #{name}
+        </if>
+        <if test="type != null and type != ''">
+            and	f.type = #{type}
+        </if>
+        <if test="state != null and state != ''">
+            and	f.state = #{state}
+        </if>
+        <!--            <if test="status != null ">-->
+        <!--                and	f.status = #{status}-->
+        <!--            </if>-->
+        <!--            <if test="startTime != null and startTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d')>=	#{startTime}-->
+        <!--            </if>-->
+        <!--            <if test="endTime != null and endTime != ''">&lt;!&ndash; 单据日期检索 &ndash;&gt;-->
+        <!--                and	DATE_FORMAT(f.create_time,'%Y-%m-%d') &lt;=	#{endTime}-->
+        <!--            </if>-->
+        <!--        </if>-->
+        <if test='pageType != null and pageType == "1"'>
+            order by t.${orderField} ${orderRule} limit #{start},#{pageSize}
+        </if>
+    </select>
+</mapper>
