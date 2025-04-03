@@ -95,10 +95,21 @@ public class Tools {
         uuid.replace("/","");
         return uuid;
     }
+
+    /**
+     * 从类路径resources目录中读取指定键的值
+     * @param key 要获取的配置项键名
+     * @return 配置项对应的值，如果不存在则返回null
+     * @throws IOException 当配置文件读取失败时抛出
+     */
     public static String getConfigValue(String key) throws IOException {
-        String config_path = Const.CONFIG_PATH;
-        //固定路径读取
-        InputStream ins = new BufferedInputStream(new FileInputStream(config_path + "application.properties"));
+        // 从类路径加载配置文件
+        InputStream ins = Thread.currentThread()
+                .getContextClassLoader()
+                .getResourceAsStream("application.properties");
+        if (ins == null) {
+            throw new FileNotFoundException("application.properties not found in classpath");
+        }
         Properties properties1 = new Properties();
         properties1.load(ins);
         String value = properties1.getProperty(key);
