@@ -113,13 +113,13 @@
     <select id="list" parameterType="com.lxe.lx.domain.qo.ClassGroupingQO" resultType="com.lxe.lx.pojo.ClassGrouping">
         select f.id,
         f.name,
-        f.class_rule,
-        f.class_condition,
+        f.class_rule as classRule,
+        f.class_condition as classCondition,
         f.volume,
-        f.create_id,
-        f.create_time,
-        f.update_id,
-        f.update_time,
+        f.create_id as createId,
+        f.create_time as createTime,
+        f.update_id as updateId,
+        f.update_time as updateTime,
         f.state,
         f.version
         from lx_class_grouping f

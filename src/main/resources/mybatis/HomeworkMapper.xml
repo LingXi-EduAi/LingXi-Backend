@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.lxe.lx.mapper.HomeworkMapper">
-    <resultMap id="Customer" type="com.lxe.lx.pojo.Customer">
+    <resultMap id="Homework" type="com.lxe.lx.pojo.Homework">
         <id column="id" jdbcType="VARCHAR" property="id" />
         <result column="name" jdbcType="VARCHAR" property="name" />
         <result column="content" jdbcType="VARCHAR" property="content" />
@@ -18,7 +18,7 @@
         lx_homework
     </sql>
     <insert id="add" parameterType="com.lxe.lx.pojo.Homework">
-        insert into lx_customer
+        insert into lx_homework
         (id,
          name,
          content,
@@ -126,12 +126,12 @@
         select t.id,
         t.name,
         t.content,
-        t.file_address,
-        t.student_id,
-        t.create_id,
-        t.create_time,
-        t.update_id,
-        t.update_time,
+        t.file_address as fileAddress,
+        t.student_id as studentId,
+        t.create_id as createId,
+        t.create_time as createTime,
+        t.update_id as updateId,
+        t.update_time as updateTime,
         t.state,
         t.version
         from lx_homework as t

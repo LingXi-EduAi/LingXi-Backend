@@ -144,17 +144,17 @@
         <!--            </if>-->
         <!--        </if>-->
     </select>
-    <select id="list" parameterType="com.lxe.lx.domain.qo.CustomerQO" resultType="com.lxe.lx.pojo.Customer">
+    <select id="list" parameterType="com.lxe.lx.domain.qo.LXClassQO" resultType="com.lxe.lx.pojo.LXClass">
         select t.id,
         t.name,
         t.information,
         t.notice,
-        t.class_grouping_id,
-        t.teacher_id,
-        t.create_id,
-        t.create_time,
-        t.update_id,
-        t.update_time,
+        t.class_grouping_id as classGroupingId,
+        t.teacher_id as teacherId,
+        t.create_id as createId,
+        t.create_time as createTime,
+        t.update_id as updateId,
+        t.update_time as updateTime,
         t.state,
         t.version
         from lx_class as t
@@ -169,16 +169,16 @@
         <!--        </if>-->
         <!--         <if test='queryType != null and queryType == "1"'>-->
         <if test="name != null and name != ''">
-            and	f.name = #{name}
+            and	t.name = #{name}
         </if>
         <if test="classGroupingId != null and classGroupingId != ''">
-            and	f.class_grouping_id = #{classGroupingId}
+            and	t.class_grouping_id = #{classGroupingId}
         </if>
         <if test="teacherId != null and teacherId != ''">
-            and	f.teacher_id = #{teacherId}
+            and	t.teacher_id = #{teacherId}
         </if>
         <if test="state != null and state != ''">
-            and	f.state = #{state}
+            and	t.state = #{state}
         </if>
         <!--            <if test="status != null ">-->
         <!--                and	f.status = #{status}-->
