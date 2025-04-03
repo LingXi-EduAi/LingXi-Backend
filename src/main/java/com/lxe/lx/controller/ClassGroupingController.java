@@ -7,6 +7,7 @@ import com.lxe.lx.domain.qo.ClassGroupingQO;
 import com.lxe.lx.pojo.ClassGrouping;
 import com.lxe.lx.pojo.Customer;
 import com.lxe.lx.pojo.TokenEntity;
+import com.lxe.lx.service.ChatMessageService;
 import com.lxe.lx.service.ClassGroupingService;
 import com.lxe.lx.service.TokenService;
 import com.lxe.lx.util.ResultConstant;
@@ -31,10 +32,11 @@ import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
 @RestController
 @RequestMapping("/classGrouping")
 public class ClassGroupingController {
-    Logger logger = LogManager.getLogger(CustomerController.class);
+    Logger logger = LogManager.getLogger(ClassGroupingController.class);
     @Autowired
     private ClassGroupingService classGroupingService;
-
+    @Autowired
+    private ChatMessageService chatMessageService;
     @Login
     @RequestMapping(value = "/add", method = RequestMethod.POST)
     public ResultConstant add(HttpServletRequest request, @RequestBody ClassGrouping classGrouping) {
@@ -120,7 +122,6 @@ public class ClassGroupingController {
             return ResultConstant.success(classGroupingDTO);
         } catch (Exception e) {
             e.printStackTrace();
-
             logger.error("list->error"+e.getMessage());
             return ResultConstant.error("查询失败");
         }

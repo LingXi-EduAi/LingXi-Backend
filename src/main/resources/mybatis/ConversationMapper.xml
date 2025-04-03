@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.lxe.lx.mapper.ClassGroupingMapper">
-    <resultMap id="ClassGrouping" type="com.lxe.lx.pojo.ClassGrouping">
+<mapper namespace="com.lxe.lx.mapper.ConversationMapper">
+    <resultMap id="Conversation" type="com.lxe.lx.pojo.Conversation">
         <id column="id" jdbcType="VARCHAR" property="id" />
-        <result column="name" jdbcType="VARCHAR" property="name" />
-        <result column="class_rule" jdbcType="VARCHAR" property="classRule" />
-        <result column="class_condition" jdbcType="VARCHAR" property="classCondition" />
-        <result column="volume" jdbcType="INTEGER" property="volume" />
+        <result column="teacher_id" jdbcType="VARCHAR" property="teacherId" />
+        <result column="student_id" jdbcType="VARCHAR" property="studentId" />
+        <result column="conversation_id" jdbcType="VARCHAR" property="conversationId" />
         <result column="create_id" jdbcType="VARCHAR" property="createId" />
         <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
         <result column="update_id" jdbcType="VARCHAR" property="updateId" />
@@ -15,46 +14,41 @@
         <result column="version" jdbcType="INTEGER" property="version" />
     </resultMap>
     <sql id="tableName">
-        lx_class_grouping
+        lx_conversation
     </sql>
-    <insert id="add" parameterType="com.lxe.lx.pojo.ClassGrouping">
-        insert into lx_class_grouping
+    <insert id="add" parameterType="com.lxe.lx.pojo.Conversation">
+        insert into lx_conversation
         (id,
-         name,
-         class_rule,
-         class_condition,
-         volume,
+         teacher_id,
+         student_id,
+         conversation_id,
          create_id,
          create_time,
          state,
          version
         )values(
                    #{id},
-                   #{name},
-                   #{classRule},
-                   #{classCondition},
-                   #{volume},
+                   #{teacherId},
+                   #{studentId},
+                   #{conversationId},
                    #{createId},
                    #{createTime},
                    #{state},
                    #{version}
                )
     </insert>
-    <update id="edit" parameterType="com.lxe.lx.pojo.ClassGrouping">
+    <update id="edit" parameterType="com.lxe.lx.pojo.Conversation">
         update
-        lx_class_grouping
+        lx_conversation
         set
-        <if test="name !=null and name !=''">
-            name = #{name},
+        <if test="teacherId !=null and teacherId !=''">
+            teacher_id = #{teacherId},
         </if>
-        <if test="classRule !=null and classRule !=''">
-            class_rule = #{classRule},
+        <if test="studentId !=null and studentId !=''">
+            student_id = #{studentId},
         </if>
-        <if test="classCondition !=null and classCondition !=''">
-            class_condition = #{classCondition},
-        </if>
-        <if test="volume !=null and volume !=''">
-            volume = #{volume},
+        <if test="conversationId !=null and conversationId !=''">
+            conversation_id = #{conversationId},
         </if>
         <if test="updateId !=null and updateId !=''">
             update_id = #{updateId},
@@ -72,8 +66,21 @@
         where
         id = #{id}
     </update>
-    <select id="num" parameterType="com.lxe.lx.domain.qo.ClassGroupingQO" resultType="java.lang.Integer">
-        select count(*) from lx_class_grouping f
+    <select id="getConversationById" resultMap="Conversation" parameterType="java.lang.String">
+        select f.id,
+               f.teacher_id,
+               f.student_id,
+               f.conversation_id,
+               f.create_id,
+               f.create_time,
+               f.update_id,
+               f.update_time,
+               f.state,
+               f.version from lx_conversation as f
+        where f.id= #{id}
+    </select>
+    <select id="num" parameterType="com.lxe.lx.domain.qo.ConversationQO" resultType="java.lang.Integer">
+        select count(*) from lx_conversation f
         where 1 = 1
         <!--        <if test='queryType != null and queryType == "0"'>-->
         <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
@@ -84,17 +91,14 @@
         <!--            </if>-->
         <!--        </if>-->
         <!--         <if test='queryType != null and queryType == "1"'>-->
-        <if test="name != null and name != ''">
-            and	f.name = #{name}
+        <if test="teacherId != null and teacherId != ''">
+            and	f.teacher_id = #{teacherId}
         </if>
-        <if test="classRule != null and classRule != ''">
-            and	f.class_rule = #{classRule}
+        <if test="studentId != null and studentId != ''">
+            and	f.student_id = #{studentId}
         </if>
-        <if test="classCondition != null and classCondition != ''">
-            and	f.class_condition = #{classCondition}
-        </if>
-        <if test="volume != null and volume != ''">
-            and	f.volume = #{volume}
+        <if test="conversationId != null and conversationId != ''">
+            and	f.conversation_id = #{conversationId}
         </if>
         <if test="state != null and state != ''">
             and	f.state = #{state}
@@ -110,19 +114,18 @@
         <!--            </if>-->
         <!--        </if>-->
     </select>
-    <select id="list" parameterType="com.lxe.lx.domain.qo.ClassGroupingQO" resultType="com.lxe.lx.pojo.ClassGrouping">
+    <select id="list" parameterType="com.lxe.lx.domain.qo.ConversationQO" resultType="com.lxe.lx.pojo.Conversation">
         select f.id,
-        f.name,
-        f.class_rule as classRule,
-        f.class_condition as classCondition,
-        f.volume,
+        f.teacher_id as teacherId,
+        f.student_id as studentId,
+        f.conversation_id as conversationId,
         f.create_id as createId,
         f.create_time as createTime,
         f.update_id as updateId,
         f.update_time as updateTime,
         f.state,
         f.version
-        from lx_class_grouping f
+        from lx_conversation f
         where 1 = 1
         <!--        <if test='queryType != null and queryType == "0"'>-->
         <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
@@ -133,17 +136,14 @@
         <!--            </if>-->
         <!--        </if>-->
         <!--         <if test='queryType != null and queryType == "1"'>-->
-        <if test="name != null and name != ''">
-            and	f.name = #{name}
+        <if test="teacherId != null and teacherId != ''">
+            and	f.teacher_id = #{teacherId}
         </if>
-        <if test="classRule != null and classRule != ''">
-            and	f.class_rule = #{classRule}
+        <if test="studentId != null and studentId != ''">
+            and	f.student_id = #{studentId}
         </if>
-        <if test="classCondition != null and classCondition != ''">
-            and	f.class_condition = #{classCondition}
-        </if>
-        <if test="volume != null and volume != ''">
-            and	f.volume = #{volume}
+        <if test="conversationId != null and conversationId != ''">
+            and	f.conversation_id = #{conversationId}
         </if>
         <if test="state != null and state != ''">
             and	f.state = #{state}
@@ -162,21 +162,7 @@
             order by f.${orderField} ${orderRule} limit #{start},#{pageSize}
         </if>
     </select>
-    <select id="getClassGroupingById" resultMap="ClassGrouping" parameterType="java.lang.String">
-        select f.id,
-               f.name,
-               f.class_rule,
-               f.class_condition,
-               f.volume,
-               f.create_id,
-               f.create_time,
-               f.update_id,
-               f.update_time,
-               f.state,
-               f.version from lx_class_grouping as f
-        where f.id= #{id}
-    </select>
     <delete id="deleteById" parameterType="java.lang.String">
-        delete from lx_class_grouping where id = #{id}
+        delete from lx_conversation where id = #{id}
     </delete>
 </mapper>

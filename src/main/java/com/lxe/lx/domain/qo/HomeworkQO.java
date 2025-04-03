@@ -5,10 +5,9 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class LXClassQO extends BaseListQO{
+public class HomeworkQO extends BaseListQO{
     private String name;
-    private String classGroupingId;
-    private String teacherId;
+    private String studentId;
     private String state;
     /**
      * 是否进行分页0-不分1-分

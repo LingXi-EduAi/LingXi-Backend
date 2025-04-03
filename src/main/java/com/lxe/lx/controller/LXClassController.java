@@ -31,7 +31,7 @@ import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
 @RestController
 @RequestMapping("/LXClass")
 public class LXClassController {
-    Logger logger = LogManager.getLogger(CustomerController.class);
+    Logger logger = LogManager.getLogger(LXClassController.class);
     @Autowired
     private LXClassService lxClassService;
     @Autowired
