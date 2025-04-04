@@ -5,11 +5,9 @@ import com.lxe.lx.domain.dto.ClassGroupingDTO;
 import com.lxe.lx.domain.dto.ValidDTO;
 import com.lxe.lx.domain.qo.ClassGroupingQO;
 import com.lxe.lx.pojo.ClassGrouping;
-import com.lxe.lx.pojo.Customer;
 import com.lxe.lx.pojo.TokenEntity;
-import com.lxe.lx.service.ChatMessageService;
+import com.lxe.lx.service.ApiService;
 import com.lxe.lx.service.ClassGroupingService;
-import com.lxe.lx.service.TokenService;
 import com.lxe.lx.util.ResultConstant;
 import com.lxe.lx.util.Tools;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
@@ -36,7 +33,7 @@ public class ClassGroupingController {
     @Autowired
     private ClassGroupingService classGroupingService;
     @Autowired
-    private ChatMessageService chatMessageService;
+    private ApiService apiService;
     @Login
     @RequestMapping(value = "/add", method = RequestMethod.POST)
     public ResultConstant add(HttpServletRequest request, @RequestBody ClassGrouping classGrouping) {
