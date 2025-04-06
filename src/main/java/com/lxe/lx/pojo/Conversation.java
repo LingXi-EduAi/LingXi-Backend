@@ -10,6 +10,7 @@ public class Conversation {
     private String teacherId;
     private String studentId;
     private String conversationId;
+    private String messageId;
     private String createId;
     private String createTime;
     private String updateId;

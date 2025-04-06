@@ -79,6 +79,19 @@
                f.version from lx_conversation as f
         where f.id= #{id}
     </select>
+    <select id="getConversationByConversationId" resultMap="Conversation" parameterType="java.lang.String">
+        select f.id,
+               f.teacher_id,
+               f.student_id,
+               f.conversation_id,
+               f.create_id,
+               f.create_time,
+               f.update_id,
+               f.update_time,
+               f.state,
+               f.version from lx_conversation as f
+        where f.conversation_id= #{conversationId}
+    </select>
     <select id="num" parameterType="com.lxe.lx.domain.qo.ConversationQO" resultType="java.lang.Integer">
         select count(*) from lx_conversation f
         where 1 = 1
@@ -164,5 +177,8 @@
     </select>
     <delete id="deleteById" parameterType="java.lang.String">
         delete from lx_conversation where id = #{id}
+    </delete>
+    <delete id="deleteByConversationId" parameterType="java.lang.String">
+        delete from lx_conversation where conversation_id = #{conversationId}
     </delete>
 </mapper>

@@ -15,7 +15,9 @@ public interface ConversationMapper {
     void add(Conversation conversation);
     void edit(Conversation conversation);
     Conversation getConversationById(String id);
+    Conversation getConversationByConversationId(String conversationId);
     int num(ConversationQO conversationQO);
     List<Conversation> list(ConversationQO conversationQO);
     void deleteById(String id);
+    void deleteByConversationId(String conversationId);
 }

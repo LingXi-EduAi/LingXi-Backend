@@ -8,6 +8,9 @@ package com.lxe.lx.util;
 //import org.jaudiotagger.audio.mp3.MP3AudioHeader;
 //import org.jaudiotagger.audio.mp3.MP3File;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -30,6 +33,7 @@ public class Tools {
     /**检验电话号码
      * @return
      */
+    private static final ObjectMapper objectMapper = new ObjectMapper(); // 解析 JSON 用
     public static boolean checkMobileNumber(String mobileNumber) {
         boolean flag = false;
         try {
@@ -327,5 +331,11 @@ public class Tools {
 //        System.out.println(ext);
 //    }
 //
-
+    public static String decodeUnicode(String json) {
+        try {
+            return objectMapper.readTree(json).toString();
+        } catch (JsonProcessingException e) {
+            return json; // 如果解析失败，返回原始数据
+        }
+    }
 }

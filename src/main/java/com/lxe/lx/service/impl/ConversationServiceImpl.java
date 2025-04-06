@@ -41,6 +41,11 @@ public class ConversationServiceImpl implements ConversationService {
     public Conversation getConversationById(String id)throws Exception{
         return conversationMapper.getConversationById(id);
     }
+    @Override
+    public Conversation getConversationByConversationId(String conversationId)throws Exception{
+        return conversationMapper.getConversationByConversationId(conversationId);
+
+    }
 
     @Override
     public int num(ConversationQO conversationQO)throws Exception{
@@ -60,4 +65,15 @@ public class ConversationServiceImpl implements ConversationService {
             return ResultConstant.error(e.getMessage());
         }
     }
+    @Override
+    public ResultConstant deleteByConversationId(String conversationId)throws Exception{
+        try{
+            conversationMapper.deleteByConversationId(conversationId);
+            return ResultConstant.success("");
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResultConstant.error(e.getMessage());
+        }
+    }
+
 }

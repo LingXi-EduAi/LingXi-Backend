@@ -12,9 +12,13 @@ public interface ConversationService {
     public ResultConstant add(Conversation conversation)throws Exception;
     public ResultConstant edit(Conversation conversation)throws Exception;
     public Conversation getConversationById(String id)throws Exception;
+    public Conversation getConversationByConversationId(String conversationId)throws Exception;
+
     public int num(ConversationQO conversationQO)throws Exception;
     public List<Conversation> list(ConversationQO conversationQO)throws Exception;
     public ResultConstant deleteById(String id)throws Exception;
+    public ResultConstant deleteByConversationId(String conversationId)throws Exception;
+
 
 
 }
