@@ -80,11 +80,11 @@
                t.describe,
                t.file_address,
                t.create_id,
-               t.create_time,gh
+               t.create_time,
                t.update_id,
                t.update_time,
                t.state,
-               t.version from lx_customer as t
+               t.version from lx_document as t
         where t.id= #{id}
     </select>
     <delete id="deleteById" parameterType="java.lang.String">
@@ -129,7 +129,7 @@
         t.describe,
         t.file_address,
         t.create_id,
-        t.create_time,gh
+        t.create_time,
         t.update_id,
         t.update_time,
         t.state,

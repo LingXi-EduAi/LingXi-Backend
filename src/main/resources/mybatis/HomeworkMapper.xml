@@ -105,7 +105,7 @@
         <if test="name != null and name != ''">
             and	f.name = #{name}
         </if>
-        <if test="classId != null and classId != ''">
+        <if test="studentId != null and studentId != ''">
             and	f.student_id = #{studentId}
         </if>
         <if test="state != null and state != ''">
@@ -148,7 +148,7 @@
         <if test="name != null and name != ''">
             and	t.name = #{name}
         </if>
-        <if test="classId != null and classId != ''">
+        <if test="studentId != null and studentId != ''">
             and	t.student_id = #{studentId}
         </if>
         <if test="state != null and state != ''">
