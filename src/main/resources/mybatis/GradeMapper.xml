@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.lxe.lx.mapper.DocumentMapper">
-    <resultMap id="Document" type="com.lxe.lx.pojo.Document">
+<mapper namespace="com.lxe.lx.mapper.GradeMapper">
+    <resultMap id="Grade" type="com.lxe.lx.pojo.Grade">
         <id column="id" jdbcType="VARCHAR" property="id" />
-        <result column="name" jdbcType="VARCHAR" property="name" />
-        <result column="type" jdbcType="VARCHAR" property="type" />
-        <result column="description" jdbcType="VARCHAR" property="description" />
-        <result column="file_address" jdbcType="VARCHAR" property="fileAddress" />
+        <result column="grade" jdbcType="INTEGER" property="grade" />
+        <result column="class_id" jdbcType="VARCHAR" property="classId" />
+        <result column="student_id" jdbcType="VARCHAR" property="studentId" />
+        <result column="subject" jdbcType="VARCHAR" property="subject" />
         <result column="create_id" jdbcType="VARCHAR" property="createId" />
         <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
         <result column="update_id" jdbcType="VARCHAR" property="updateId" />
@@ -15,46 +15,46 @@
         <result column="version" jdbcType="INTEGER" property="version" />
     </resultMap>
     <sql id="tableName">
-        lx_document
+        lx_grade
     </sql>
-    <insert id="add" parameterType="com.lxe.lx.pojo.Document">
-        insert into lx_document
+    <insert id="add" parameterType="com.lxe.lx.pojo.Grade">
+        insert into lx_grade
         (id,
-         name,
-         type,
-         description,
-         file_address,
+         grade,
+         class_id,
+         student_id,
+         subject,
          create_id,
          create_time,
          state,
          version
         )values(
                    #{id},
-                   #{name},
-                   #{type},
-                   #{description},
-                   #{fileAddress},
+                   #{grade},
+                   #{classId},
+                   #{studentId},
+                   #{subject},
                    #{createId},
                    #{createTime},
                    #{state},
                    #{version}
                )
     </insert>
-    <update id="edit" parameterType="com.lxe.lx.pojo.Document">
+    <update id="edit" parameterType="com.lxe.lx.pojo.Customer">
         update
-        lx_document
+        lx_grade
         set
-        <if test="name !=null and name !=''">
-            name = #{name},
+        <if test="grade !=null and grade !=''">
+            grade = #{grade},
         </if>
-        <if test="type !=null and type !=''">
-            type = #{type},
+        <if test="classId !=null and classId !=''">
+            class_id = #{classId},
         </if>
-        <if test="description !=null and description !=''">
-            description = #{description},
+        <if test="studentId !=null and studentId !=''">
+            student_id = #{studentId},
         </if>
-        <if test="fileAddress !=null and fileAddress !=''">
-            file_address = #{fileAddress},
+        <if test="subject !=null and subject !=''">
+            subject = #{subject},
         </if>
         <if test="updateId !=null and updateId !=''">
             update_id = #{updateId},
@@ -72,26 +72,38 @@
         where
         id = #{id}
     </update>
-
-    <select id="getDocumentById" resultMap="Document" parameterType="java.lang.String">
+<!--    <select id="getLXClassByUserName" resultMap="LXClass" parameterType="java.lang.String">-->
+<!--        select t.id,-->
+<!--               t.name,-->
+<!--               t.subject,-->
+<!--               t.information,-->
+<!--               t.notice,-->
+<!--               t.class_grouping_id as classGroupingId,-->
+<!--               t.teacher_id as teacherId,-->
+<!--               t.create_id as createId,-->
+<!--               t.create_time as createTime,-->
+<!--               t.update_id as updateId,-->
+<!--               t.update_time as updateTime,-->
+<!--               t.state,-->
+<!--               t.version from lx_class as t-->
+<!--        where t.name = #{name}-->
+<!--    </select>-->
+    <select id="getGradeById" resultMap="Grade" parameterType="java.lang.String">
         select t.id,
-               t.name,
-               t.type,
-               t.description,
-               t.file_address,
+               t.grade,
+               t.class_id,
+               t.student_id,
+               t.subject,
                t.create_id,
                t.create_time,
                t.update_id,
                t.update_time,
                t.state,
-               t.version from lx_document as t
-        where t.id= #{id}
+               t.version from lx_grade as t
+        where t.id = #{id}
     </select>
-    <delete id="deleteById" parameterType="java.lang.String">
-        delete from lx_document where id = #{id}
-    </delete>
-    <select id="num" parameterType="com.lxe.lx.domain.qo.DocumentQO" resultType="java.lang.Integer">
-        select count(*) from lx_document f
+    <select id="num" parameterType="com.lxe.lx.domain.qo.GradeQO" resultType="java.lang.Integer">
+        select count(*) from lx_grade f
         where 1 = 1
         <!--        <if test='queryType != null and queryType == "0"'>-->
         <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
@@ -102,11 +114,17 @@
         <!--            </if>-->
         <!--        </if>-->
         <!--         <if test='queryType != null and queryType == "1"'>-->
-        <if test="name != null and name != ''">
-            and	f.name = #{name}
+        <if test="grade != null and grade != ''">
+            and	f.grade = #{grade}
         </if>
-        <if test="type != null and type != ''">
-            and	f.type = #{type}
+        <if test="subject != null and subject != ''">
+            and	f.subject = #{subject}
+        </if>
+        <if test="classId != null and classId != ''">
+            and	f.class_id = #{classId}
+        </if>
+        <if test="studentId != null and studentId != ''">
+            and	f.student_id = #{studentId}
         </if>
         <if test="state != null and state != ''">
             and	f.state = #{state}
@@ -122,19 +140,19 @@
         <!--            </if>-->
         <!--        </if>-->
     </select>
-    <select id="list" parameterType="com.lxe.lx.domain.qo.DocumentQO" resultType="com.lxe.lx.pojo.Document">
+    <select id="list" parameterType="com.lxe.lx.domain.qo.GradeQO" resultType="com.lxe.lx.pojo.Grade">
         select t.id,
-        t.name,
-        t.type,
-        t.description,
-        t.file_address,
+        t.grade,
+        t.class_id,
+        t.student_id,
+        t.subject,
         t.create_id,
         t.create_time,
         t.update_id,
         t.update_time,
         t.state,
         t.version
-        from lx_document as t
+        from lx_grade as t
         where 1 = 1
         <!--        <if test='queryType != null and queryType == "0"'>-->
         <!--            <if test="condition != null and condition != ''">&lt;!&ndash; 关键词检索 &ndash;&gt;-->
@@ -145,11 +163,17 @@
         <!--            </if>-->
         <!--        </if>-->
         <!--         <if test='queryType != null and queryType == "1"'>-->
-        <if test="name != null and name != ''">
-            and	f.name = #{name}
+        <if test="grade != null and grade != ''">
+            and	f.grade = #{grade}
         </if>
-        <if test="type != null and type != ''">
-            and	f.type = #{type}
+        <if test="subject != null and subject != ''">
+            and	f.subject = #{subject}
+        </if>
+        <if test="classId != null and classId != ''">
+            and	f.class_id = #{classId}
+        </if>
+        <if test="studentId != null and studentId != ''">
+            and	f.student_id = #{studentId}
         </if>
         <if test="state != null and state != ''">
             and	f.state = #{state}
@@ -168,4 +192,7 @@
             order by t.${orderField} ${orderRule} limit #{start},#{pageSize}
         </if>
     </select>
+    <delete id="deleteById" parameterType="java.lang.String">
+        delete from lx_grade where id = #{id}
+    </delete>
 </mapper>

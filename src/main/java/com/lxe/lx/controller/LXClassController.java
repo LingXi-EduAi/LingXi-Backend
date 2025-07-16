@@ -46,6 +46,10 @@ public class LXClassController {
             return ResultConstant.illegalParams("未选择分班模版");
         } else if (StringUtils.isBlank(lxClass.getTeacherId())) {
             return ResultConstant.illegalParams("未选择班主任");
+        } else if (StringUtils.isBlank(lxClass.getSubject())) {
+            return ResultConstant.illegalParams("学科不能为空");
+        } else if (StringUtils.isBlank(lxClass.getSubject())) {
+            return ResultConstant.illegalParams("学科不能为空");
         }
 //        else if (StringUtils.isBlank(classGrouping.getCondition())) {
 //            return ResultConstant.illegalParams("分班条件为空");
@@ -86,6 +90,10 @@ public class LXClassController {
             return ResultConstant.illegalParams("未选择分班模版");
         } else if (StringUtils.isBlank(lxClass.getTeacherId())) {
             return ResultConstant.illegalParams("未选择班主任");
+        } else if (StringUtils.isBlank(lxClass.getSubject())) {
+            return ResultConstant.illegalParams("学科不能为空");
+        }else if (StringUtils.isBlank(lxClass.getSubject())) {
+            return ResultConstant.illegalParams("学科不能为空");
         }
         try {
             TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);

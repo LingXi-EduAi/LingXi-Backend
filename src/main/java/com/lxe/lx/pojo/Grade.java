@@ -3,24 +3,19 @@ package com.lxe.lx.pojo;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter
 @Setter
-public class LXClass {
+
+public class Grade {
     private String id;
-    private String name;
+    private Integer grade;
+    private String classId;
+    private String studentId;
     private String subject;
-    private String information;
-    private String notice;
-    private String classGroupingId;
-    private String teacherId;
     private String createId;
     private String createTime;
     private String updateId;
     private String updateTime;
     private String state;
     private Integer version;
-    private List<Customer> studentList;
 }
-

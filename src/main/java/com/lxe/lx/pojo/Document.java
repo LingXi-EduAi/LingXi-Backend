@@ -9,7 +9,7 @@ public class Document {
     private String id;
     private String name;
     private String type;
-    private String describe;
+    private String description;
     private String fileAddress;
     private String createId;
     private String createTime;
