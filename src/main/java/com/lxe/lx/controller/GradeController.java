@@ -47,9 +47,12 @@ public class GradeController {
         } else if (grade.getGrade()==null) {
             return ResultConstant.illegalParams("成绩不能为空");
         }
-//        else if (StringUtils.isBlank(grade.getSubject())) {
-//            return ResultConstant.illegalParams("学科不能为空");
-//        }
+        else if (StringUtils.isBlank(grade.getUnit())) {
+            return ResultConstant.illegalParams("单元不能为空");
+        }
+        else if (StringUtils.isBlank(grade.getWeek())) {
+            return ResultConstant.illegalParams("周数不能为空");
+        }
         try{
             TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
             if(StringUtils.isBlank(grade.getSubject())) {
@@ -61,6 +64,16 @@ public class GradeController {
             grade.setCreateId(tokenEntity.getId());
             grade.setState("1");
             grade.setVersion(1);
+            if(grade.getGrade()>=90){
+                grade.setEvaluate("0");
+            }else if (grade.getGrade()>=80){
+                grade.setEvaluate("1");
+            }else if (grade.getGrade()>=60){
+                grade.setEvaluate("2");
+            }else if (grade.getGrade()>=0){
+                grade.setEvaluate("3");
+            }
+
             ResultConstant ref = gradeService.add(grade);
             return ref;
         }catch (Exception e){
@@ -94,6 +107,15 @@ public class GradeController {
             }
             grade.setUpdateId(tokenEntity.getId());
             grade.setUpdateTime(Tools.nowTimeStr());
+            if(grade.getGrade()>=90){
+                grade.setEvaluate("0");
+            }else if (grade.getGrade()>=80){
+                grade.setEvaluate("1");
+            }else if (grade.getGrade()>=60){
+                grade.setEvaluate("2");
+            }else if (grade.getGrade()>=0){
+                grade.setEvaluate("3");
+            }
             ResultConstant ref = gradeService.edit(grade);
             return ref;
         }catch (Exception e) {

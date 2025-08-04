@@ -6,6 +6,9 @@
         <result column="grade" jdbcType="INTEGER" property="grade" />
         <result column="class_id" jdbcType="VARCHAR" property="classId" />
         <result column="student_id" jdbcType="VARCHAR" property="studentId" />
+        <result column="week" jdbcType="VARCHAR" property="week" />
+        <result column="unit" jdbcType="VARCHAR" property="unit" />
+        <result column="evaluate" jdbcType="VARCHAR" property="evaluate" />
         <result column="subject" jdbcType="VARCHAR" property="subject" />
         <result column="create_id" jdbcType="VARCHAR" property="createId" />
         <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
@@ -23,6 +26,9 @@
          grade,
          class_id,
          student_id,
+         week,
+         unit,
+         evaluate,
          subject,
          create_id,
          create_time,
@@ -33,6 +39,9 @@
                    #{grade},
                    #{classId},
                    #{studentId},
+                   #{week},
+                   #{unit},
+                   #{evaluate},
                    #{subject},
                    #{createId},
                    #{createTime},
@@ -52,6 +61,15 @@
         </if>
         <if test="studentId !=null and studentId !=''">
             student_id = #{studentId},
+        </if>
+        <if test="week !=null and week !=''">
+            week = #{week},
+        </if>
+        <if test="unit !=null and unit !=''">
+            unit = #{unit},
+        </if>
+        <if test="evaluate !=null and evaluate !=''">
+            evaluate = #{evaluate},
         </if>
         <if test="subject !=null and subject !=''">
             subject = #{subject},
@@ -93,6 +111,9 @@
                t.grade,
                t.class_id,
                t.student_id,
+               t.week,
+               t.unit,
+               t.evaluate,
                t.subject,
                t.create_id,
                t.create_time,
@@ -120,6 +141,15 @@
         <if test="subject != null and subject != ''">
             and	f.subject = #{subject}
         </if>
+        <if test="week != null and week != ''">
+            and	f.week = #{week}
+        </if>
+        <if test="unit != null and unit != ''">
+            and	f.unit = #{unit}
+        </if>
+        <if test="evaluate != null and evaluate != ''">
+            and	f.evaluate = #{evaluate}
+        </if>
         <if test="classId != null and classId != ''">
             and	f.class_id = #{classId}
         </if>
@@ -146,6 +176,9 @@
         t.class_id,
         t.student_id,
         t.subject,
+        t.week,
+        t.unit,
+        t.evaluate,
         t.create_id,
         t.create_time,
         t.update_id,
@@ -168,6 +201,15 @@
         </if>
         <if test="subject != null and subject != ''">
             and	f.subject = #{subject}
+        </if>
+        <if test="week != null and week != ''">
+            and	f.week = #{week}
+        </if>
+        <if test="unit != null and unit != ''">
+            and	f.unit = #{unit}
+        </if>
+        <if test="evaluate != null and evaluate != ''">
+            and	f.evaluate = #{evaluate}
         </if>
         <if test="classId != null and classId != ''">
             and	f.class_id = #{classId}
@@ -195,4 +237,24 @@
     <delete id="deleteById" parameterType="java.lang.String">
         delete from lx_grade where id = #{id}
     </delete>
+    <select id="maxWeek" parameterType="com.lxe.lx.domain.qo.GradeQO" resultType="java.lang.String">
+        select week
+        from lx_grade
+        where 1 = 1
+        <if test="classId != null and classId != ''">
+            and	f.class_id = #{classId}
+        </if>
+        ORDER BY CAST(week AS UNSIGNED) DESC
+        LIMIT 1
+    </select>
+    <select id="maxUnit" parameterType="com.lxe.lx.domain.qo.GradeQO" resultType="java.lang.String">
+        select unit
+        from lx_grade
+        where 1 = 1
+        <if test="classId != null and classId != ''">
+            and	f.class_id = #{classId}
+        </if>
+        ORDER BY CAST(unit AS UNSIGNED) DESC
+        LIMIT 1
+    </select>
 </mapper>

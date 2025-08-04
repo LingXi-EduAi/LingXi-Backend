@@ -64,6 +64,8 @@ public class HomeworkController {
     @Login
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
     public ResultConstant edit(HttpServletRequest request, @RequestBody Homework homework) {
+//    public ResultConstant edit(HttpServletRequest request,Homework homework) {
+
         if (homework == null || StringUtils.isBlank(homework.getName())) {
             return ResultConstant.illegalParams("标题不能为空");
         } else if (StringUtils.isBlank(homework.getContent())) {

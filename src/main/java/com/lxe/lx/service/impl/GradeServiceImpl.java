@@ -62,4 +62,12 @@ public class GradeServiceImpl implements GradeService {
             return ResultConstant.error(e.getMessage());
         }
     }
+    @Override
+    public String maxWeek(GradeQO gradeQO)throws Exception{
+        return gradeMapper.maxWeek(gradeQO);
+    }
+    @Override
+    public String maxUnit(GradeQO gradeQO)throws Exception{
+        return gradeMapper.maxUnit(gradeQO);
+    }
 }

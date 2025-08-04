@@ -209,7 +209,7 @@
             and	f.name = #{name}
         </if>
         <if test="classId != null and classId != ''">
-            and	f.class_id = #{classId}
+            and	f.class_id like CONCAT('%', #{classId}, '%')
         </if>
         <if test="state != null and state != ''">
             and	f.state = #{state}

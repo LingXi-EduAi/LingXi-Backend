@@ -12,6 +12,9 @@ public class Grade {
     private String classId;
     private String studentId;
     private String subject;
+    private String week;
+    private String unit;
+    private String evaluate;
     private String createId;
     private String createTime;
     private String updateId;

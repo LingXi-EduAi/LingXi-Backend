@@ -18,4 +18,6 @@ public interface GradeMapper {
     int num(GradeQO gradeQO);
     List<Grade> list(GradeQO gradeQO);
     void deleteById(String id);
+    String maxWeek(GradeQO gradeQO);
+    String maxUnit(GradeQO gradeQO);
 }

@@ -19,4 +19,6 @@ public interface GradeService {
     public int num(GradeQO gradeQO)throws Exception;
     public List<Grade> list(GradeQO gradeQO)throws Exception;
     public ResultConstant deleteById(String id)throws Exception;
+    public String maxWeek(GradeQO gradeQO)throws Exception;
+    public String maxUnit(GradeQO gradeQO)throws Exception;
 }

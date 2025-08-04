@@ -68,7 +68,9 @@ public class LXClassController {
             lxClass.setVersion(1);
             if (!(lxClass.getStudentList() == null || lxClass.getStudentList().isEmpty())){
                 for (Customer student : lxClass.getStudentList()) {
-                    student.setClassId(lxClass.getId());
+                    Customer studentTemp = customerService.getCustomerById(student.getId());
+                    String classIdTemp = studentTemp.getClassId();
+                    student.setClassId(classIdTemp+","+lxClass.getId());
                 }
             }
             ResultConstant ref = lxClassService.add(lxClass);
@@ -100,14 +102,22 @@ public class LXClassController {
             LXClass temp = lxClassService.getLXClassById(lxClass.getId());
             CustomerQO customerQOTemp = new CustomerQO();
             customerQOTemp.setClassId(temp.getId());
+//            清除已有classId
             List<Customer> studentList = customerService.list(customerQOTemp);
             if (!(studentList == null || studentList.isEmpty())){
                 for (Customer student : studentList) {
-                    student.setClassId(null);
+                    Customer studentTemp = customerService.getCustomerById(student.getId());
+                    student.setClassId(studentTemp.getClassId().replace(lxClass.getId()+",",""));
                 }
-            }
-            if (!(lxClass.getStudentList() == null || lxClass.getStudentList().isEmpty())) {
                 customerService.editList(studentList);
+            }
+//            重新对classId进行设置
+            if (!(lxClass.getStudentList() == null || lxClass.getStudentList().isEmpty())){
+                for (Customer student : lxClass.getStudentList()) {
+                    Customer studentTemp = customerService.getCustomerById(student.getId());
+                    String classIdTemp = studentTemp.getClassId();
+                    student.setClassId(classIdTemp+","+lxClass.getId());
+                }
             }
             if (temp == null) {
                 return ResultConstant.error("当前班级不存在");
