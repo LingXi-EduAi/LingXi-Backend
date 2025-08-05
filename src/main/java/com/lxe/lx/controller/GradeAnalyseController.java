@@ -293,8 +293,8 @@ public class GradeAnalyseController {
         }
     }
     @Login
-    @RequestMapping(value = "/learningTrendTeacher", method = RequestMethod.POST)
-    public ResultConstant learningTrendTeacher(HttpServletRequest request, @RequestBody GradeQO gradeQO) {
+    @RequestMapping(value = "/learningTrendStudent", method = RequestMethod.POST)
+    public ResultConstant learningTrendStudent(HttpServletRequest request, @RequestBody GradeQO gradeQO) {
         if (gradeQO == null || StringUtils.isBlank(gradeQO.getStudentId())) {
             return ResultConstant.illegalParams("学生ID不能为空");
         }else if (StringUtils.isBlank(gradeQO.getClassId())) {
