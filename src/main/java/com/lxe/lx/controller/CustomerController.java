@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
@@ -93,7 +94,14 @@ public class CustomerController {
             }
             customer.setId(Tools.get32UUID());
             customer.setCreateTime(Tools.nowTimeStr());
-//            customer.setState("1");
+            // 确保状态正确设置：1=教师, 2=学生
+            if (StringUtils.isBlank(customer.getState())) {
+                customer.setState("2"); // 默认为学生
+            }
+            // 验证状态值的合法性
+            if (!"1".equals(customer.getState()) && !"2".equals(customer.getState())) {
+                return ResultConstant.illegalParams("用户角色选择无效");
+            }
             customer.setVersion(1);
             customer.setPassword(MD5.md5(customer.getPassword()));
             ResultConstant ref = customerService.add(customer);
@@ -222,12 +230,13 @@ public class CustomerController {
 
     @Login
     @RequestMapping(value = "/detail", method = RequestMethod.POST)
-    public ResultConstant detail(HttpServletRequest request) {
+    public ResultConstant detail(HttpServletRequest request, @RequestParam(required = false) String id) {
         try {
             TokenEntity tokenEntity = (TokenEntity)request.getAttribute(ORG_ID_KEY);
-            Customer customer = customerService.getCustomerById(tokenEntity.getId());
+            String customerId = StringUtils.isNotBlank(id) ? id : tokenEntity.getId();
+            Customer customer = customerService.getCustomerById(customerId);
             if(customer == null){
-                return ResultConstant.error("token异常请重新登录");
+                return ResultConstant.error("用户不存在");
             }
             return ResultConstant.success(customer);
         }catch (Exception e){

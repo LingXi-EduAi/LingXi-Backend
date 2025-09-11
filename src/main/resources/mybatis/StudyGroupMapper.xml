@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.StudyGroupMapper">
+
+    <resultMap id="StudyGroup" type="com.lxe.lx.pojo.StudyGroup">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="description" jdbcType="VARCHAR" property="description" />
+        <result column="category" jdbcType="VARCHAR" property="category" />
+        <result column="max_members" jdbcType="INTEGER" property="maxMembers" />
+        <result column="create_id" jdbcType="VARCHAR" property="createId" />
+        <result column="create_name" jdbcType="VARCHAR" property="createName" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="update_id" jdbcType="VARCHAR" property="updateId" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="state" jdbcType="VARCHAR" property="state" />
+        <result column="version" jdbcType="INTEGER" property="version" />
+    </resultMap>
+
+    <resultMap id="StudyGroupMember" type="com.lxe.lx.pojo.StudyGroupMember">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="group_id" jdbcType="VARCHAR" property="groupId" />
+        <result column="customer_id" jdbcType="VARCHAR" property="customerId" />
+        <result column="customer_name" jdbcType="VARCHAR" property="customerName" />
+        <result column="role" jdbcType="VARCHAR" property="role" />
+        <result column="join_time" jdbcType="TIMESTAMP" property="joinTime" />
+        <result column="state" jdbcType="VARCHAR" property="state" />
+        <result column="version" jdbcType="INTEGER" property="version" />
+    </resultMap>
+
+    <resultMap id="StudyGroupMessage" type="com.lxe.lx.pojo.StudyGroupMessage">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="group_id" jdbcType="VARCHAR" property="groupId" />
+        <result column="sender_id" jdbcType="VARCHAR" property="senderId" />
+        <result column="sender_name" jdbcType="VARCHAR" property="senderName" />
+        <result column="content" jdbcType="VARCHAR" property="content" />
+        <result column="message_type" jdbcType="VARCHAR" property="messageType" />
+        <result column="reply_to" jdbcType="VARCHAR" property="replyTo" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="state" jdbcType="VARCHAR" property="state" />
+        <result column="version" jdbcType="INTEGER" property="version" />
+    </resultMap>
+
+    <!-- groups CRUD -->
+    <insert id="addGroup" parameterType="com.lxe.lx.pojo.StudyGroup">
+        insert into lx_study_group
+        (id, name, description, category, max_members, create_id, create_time, state, version)
+        values (#{id}, #{name}, #{description}, #{category}, #{maxMembers}, #{createId}, #{createTime}, #{state}, #{version})
+    </insert>
+
+    <update id="editGroup" parameterType="com.lxe.lx.pojo.StudyGroup">
+        update lx_study_group
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="description != null and description != ''">description = #{description},</if>
+            <if test="category != null and category != ''">category = #{category},</if>
+            <if test="maxMembers != null">max_members = #{maxMembers},</if>
+            <if test="updateId != null and updateId != ''">update_id = #{updateId},</if>
+            <if test="updateTime != null and updateTime != ''">update_time = #{updateTime},</if>
+            <if test="state != null and state != ''">state = #{state},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="getGroupById" parameterType="java.lang.String" resultMap="StudyGroup">
+        select * from lx_study_group where id = #{id}
+    </select>
+
+    <select id="numGroup" parameterType="java.util.Map" resultType="java.lang.Integer">
+        select count(*) from lx_study_group f where 1=1
+        <if test="name != null and name != ''">and f.name like CONCAT('%', #{name}, '%')</if>
+        <if test="category != null and category != ''">and f.category = #{category}</if>
+        <if test="state != null and state != ''">and f.state = #{state}</if>
+    </select>
+
+    <select id="listGroup" parameterType="java.util.Map" resultMap="StudyGroup">
+        select f.*, c.name as create_name
+        from lx_study_group f
+        left join lx_customer c on f.create_id = c.id
+        where 1=1
+        <if test="name != null and name != ''">and f.name like CONCAT('%', #{name}, '%')</if>
+        <if test="category != null and category != ''">and f.category = #{category}</if>
+        <if test="state != null and state != ''">and f.state = #{state}</if>
+        <if test="pageType != null and pageType == '1'">
+            order by f.create_time desc limit #{start}, #{pageSize}
+        </if>
+    </select>
+
+    <delete id="deleteGroup" parameterType="java.lang.String">
+        delete from lx_study_group where id = #{id}
+    </delete>
+
+    <!-- members -->
+    <insert id="addMember" parameterType="com.lxe.lx.pojo.StudyGroupMember">
+        insert into lx_study_group_member
+        (id, group_id, customer_id, role, join_time, state, version)
+        values (#{id}, #{groupId}, #{customerId}, #{role}, #{joinTime}, #{state}, #{version})
+    </insert>
+
+    <delete id="removeMember" parameterType="com.lxe.lx.pojo.StudyGroupMember">
+        delete from lx_study_group_member where group_id = #{groupId} and customer_id = #{customerId}
+    </delete>
+
+    <select id="listMembers" parameterType="java.lang.String" resultMap="StudyGroupMember">
+        select m.*, c.name as customer_name
+        from lx_study_group_member m
+        left join lx_customer c on m.customer_id = c.id
+        where m.group_id = #{groupId}
+    </select>
+
+    <select id="countMember" parameterType="com.lxe.lx.pojo.StudyGroupMember" resultType="java.lang.Integer">
+        select count(*) from lx_study_group_member where group_id = #{groupId} and customer_id = #{customerId}
+    </select>
+
+    <!-- messages -->
+    <insert id="addMessage" parameterType="com.lxe.lx.pojo.StudyGroupMessage">
+        insert into lx_study_group_message
+        (id, group_id, sender_id, content, create_time, state, version)
+        values (#{id}, #{groupId}, #{senderId}, #{content}, #{createTime}, #{state}, #{version})
+    </insert>
+
+    <select id="listMessages" parameterType="java.util.Map" resultMap="StudyGroupMessage">
+        select m.*, c.name as sender_name 
+        from lx_study_group_message m
+        left join lx_customer c on m.sender_id = c.id
+        where m.group_id = #{groupId}
+        <if test="startTime != null and startTime != ''">and m.create_time &gt;= #{startTime}</if>
+        <if test="endTime != null and endTime != ''">and m.create_time &lt;= #{endTime}</if>
+        order by m.create_time asc
+        <if test="pageType != null and pageType == '1'">limit #{start}, #{pageSize}</if>
+    </select>
+
+    <select id="getMessageById" parameterType="java.lang.String" resultMap="StudyGroupMessage">
+        select m.*, c.name as sender_name 
+        from lx_study_group_message m
+        left join lx_customer c on m.sender_id = c.id
+        where m.id = #{id}
+    </select>
+
+    <select id="countMessages" parameterType="java.util.Map" resultType="java.lang.Integer">
+        select count(*) from lx_study_group_message m
+        where m.group_id = #{groupId}
+        <if test="startTime != null and startTime != ''">and m.create_time &gt;= #{startTime}</if>
+        <if test="endTime != null and endTime != ''">and m.create_time &lt;= #{endTime}</if>
+    </select>
+
+</mapper>
+
+
+

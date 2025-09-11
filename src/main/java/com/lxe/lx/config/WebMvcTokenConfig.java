@@ -18,10 +18,11 @@ public class WebMvcTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/classGrouping/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/api/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/conversation/**");
-        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/document/**");        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/document/**");
+        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/document/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/homework/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/upload/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/grade/**");
+        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/studyGroup/**");
 
     }
     @Override
@@ -29,10 +30,11 @@ public class WebMvcTokenConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 //是否发送Cookie
                 .allowCredentials(true)
-                //放行哪些原始域
-                .allowedOriginPatterns("*")
-                .allowedMethods(new String[]{"GET", "POST", "PUT", "DELETE"})
+                //放行哪些原始域 - 生产环境应该限制为具体域名
+                .allowedOriginPatterns("http://localhost:*", "http://127.0.0.1:*", "https://yourdomain.com")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .exposedHeaders("*");
+                .exposedHeaders("Content-Length", "Authorization", "Content-Type", "token")
+                .maxAge(3600); // 预检请求缓存时间
     }
 }
