@@ -73,7 +73,9 @@ public class CustomerController {
         }else if(!Tools.checkMobileNumber(customer.getPhoneNumber())){
             return ResultConstant.illegalParams("号码格式错误");
         }else if (StringUtils.isBlank(customer.getState())) {
-            return ResultConstant.illegalParams("状态不能为空");
+            return ResultConstant.illegalParams("请选择用户身份");
+        }else if (!"1".equals(customer.getState()) && !"2".equals(customer.getState())) {
+            return ResultConstant.illegalParams("用户身份选择错误");
         }
 //        else if (StringUtils.isBlank(customer.getName())) {
 //            return ResultConstant.illegalParams("用户名不能为空");

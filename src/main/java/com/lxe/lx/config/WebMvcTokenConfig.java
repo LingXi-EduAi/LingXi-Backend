@@ -18,10 +18,11 @@ public class WebMvcTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/classGrouping/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/api/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/conversation/**");
-        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/document/**");        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/document/**");
+        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/document/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/homework/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/upload/**");
         registry.addInterceptor(authorizationInterceptor).addPathPatterns("/grade/**");
+        registry.addInterceptor(authorizationInterceptor).addPathPatterns("/studyGroup/**");
 
     }
     @Override
