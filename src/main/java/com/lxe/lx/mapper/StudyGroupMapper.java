@@ -32,3 +32,6 @@ public interface StudyGroupMapper {
     StudyGroupMessage getMessageById(String id);
     int countMessages(Map<String, Object> params);
 }
+
+
+

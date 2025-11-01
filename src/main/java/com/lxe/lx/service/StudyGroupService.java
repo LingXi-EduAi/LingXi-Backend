@@ -25,3 +25,6 @@ public interface StudyGroupService {
     StudyGroupMessage getMessageById(String id) throws Exception;
     int countMessages(Map<String, Object> params) throws Exception;
 }
+
+
+

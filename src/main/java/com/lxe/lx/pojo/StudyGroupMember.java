@@ -15,3 +15,6 @@ public class StudyGroupMember {
     private String state;
     private Integer version;
 }
+
+
+
