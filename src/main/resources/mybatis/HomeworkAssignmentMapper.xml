@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.HomeworkAssignmentMapper">
+    <resultMap id="HomeworkAssignment" type="com.lxe.lx.pojo.HomeworkAssignment">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="title" jdbcType="VARCHAR" property="title" />
+        <result column="content" jdbcType="VARCHAR" property="content" />
+        <result column="subject" jdbcType="VARCHAR" property="subject" />
+        <result column="class_id" jdbcType="VARCHAR" property="classId" />
+        <result column="teacher_id" jdbcType="VARCHAR" property="teacherId" />
+        <result column="teacher_name" jdbcType="VARCHAR" property="teacherName" />
+        <result column="start_time" jdbcType="TIMESTAMP" property="startTime" />
+        <result column="end_time" jdbcType="TIMESTAMP" property="endTime" />
+        <result column="status" jdbcType="VARCHAR" property="status" />
+        <result column="file_address" jdbcType="VARCHAR" property="fileAddress" />
+        <result column="create_id" jdbcType="VARCHAR" property="createId" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="update_id" jdbcType="VARCHAR" property="updateId" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="state" jdbcType="VARCHAR" property="state" />
+        <result column="version" jdbcType="INTEGER" property="version" />
+    </resultMap>
+    
+    <sql id="tableName">
+        lx_homework_assignment
+    </sql>
+    
+    <insert id="add" parameterType="com.lxe.lx.pojo.HomeworkAssignment">
+        insert into lx_homework_assignment
+        (id, title, content, subject, class_id, teacher_id, teacher_name,
+         start_time, end_time, status, file_address,
+         create_id, create_time, state, version)
+        values(
+            #{id}, #{title}, #{content}, #{subject}, #{classId}, #{teacherId}, #{teacherName},
+            #{startTime}, #{endTime}, #{status}, #{fileAddress},
+            #{createId}, #{createTime}, #{state}, #{version}
+        )
+    </insert>
+    
+    <update id="edit" parameterType="com.lxe.lx.pojo.HomeworkAssignment">
+        update lx_homework_assignment
+        <set>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="content != null and content != ''">content = #{content},</if>
+            <if test="subject != null and subject != ''">subject = #{subject},</if>
+            <if test="classId != null and classId != ''">class_id = #{classId},</if>
+            <if test="startTime != null and startTime != ''">start_time = #{startTime},</if>
+            <if test="endTime != null and endTime != ''">end_time = #{endTime},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="fileAddress != null">file_address = #{fileAddress},</if>
+            <if test="updateId != null and updateId != ''">update_id = #{updateId},</if>
+            <if test="updateTime != null and updateTime != ''">update_time = #{updateTime},</if>
+            version = version + 1
+        </set>
+        where id = #{id} and version = #{version}
+    </update>
+    
+    <update id="updateStatus" parameterType="com.lxe.lx.pojo.HomeworkAssignment">
+        update lx_homework_assignment
+        set status = #{status},
+            update_id = #{updateId},
+            update_time = #{updateTime},
+            version = version + 1
+        where id = #{id} and version = #{version}
+    </update>
+    
+    <select id="getById" resultMap="HomeworkAssignment">
+        select * from lx_homework_assignment
+        where id = #{id} and state = '1'
+    </select>
+    
+    <update id="delete">
+        update lx_homework_assignment
+        set state = '0'
+        where id = #{id}
+    </update>
+    
+    <select id="list" resultMap="HomeworkAssignment">
+        select * from lx_homework_assignment
+        where state = '1'
+        <if test="teacherId != null and teacherId != ''">
+            and teacher_id = #{teacherId}
+        </if>
+        <if test="classId != null and classId != ''">
+            and class_id = #{classId}
+        </if>
+        <if test="subject != null and subject != ''">
+            and subject = #{subject}
+        </if>
+        <if test="status != null and status != ''">
+            and status = #{status}
+        </if>
+        <if test="title != null and title != ''">
+            and title like concat('%', #{title}, '%')
+        </if>
+        order by create_time desc
+        <if test="start != null and pageSize != null">
+            limit #{start}, #{pageSize}
+        </if>
+    </select>
+    
+    <select id="num" resultType="java.lang.Integer">
+        select count(*) from lx_homework_assignment
+        where state = '1'
+        <if test="teacherId != null and teacherId != ''">
+            and teacher_id = #{teacherId}
+        </if>
+        <if test="classId != null and classId != ''">
+            and class_id = #{classId}
+        </if>
+        <if test="subject != null and subject != ''">
+            and subject = #{subject}
+        </if>
+        <if test="status != null and status != ''">
+            and status = #{status}
+        </if>
+        <if test="title != null and title != ''">
+            and title like concat('%', #{title}, '%')
+        </if>
+    </select>
+</mapper>
+

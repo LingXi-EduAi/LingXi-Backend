@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.HomeworkSubmissionMapper">
+    <resultMap id="HomeworkSubmission" type="com.lxe.lx.pojo.HomeworkSubmission">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="assignment_id" jdbcType="VARCHAR" property="assignmentId" />
+        <result column="student_id" jdbcType="VARCHAR" property="studentId" />
+        <result column="student_name" jdbcType="VARCHAR" property="studentName" />
+        <result column="content" jdbcType="VARCHAR" property="content" />
+        <result column="file_address" jdbcType="VARCHAR" property="fileAddress" />
+        <result column="submit_time" jdbcType="TIMESTAMP" property="submitTime" />
+        <result column="grade" jdbcType="INTEGER" property="grade" />
+        <result column="feedback" jdbcType="VARCHAR" property="feedback" />
+        <result column="graded_time" jdbcType="TIMESTAMP" property="gradedTime" />
+        <result column="graded_by" jdbcType="VARCHAR" property="gradedBy" />
+        <result column="status" jdbcType="VARCHAR" property="status" />
+        <result column="create_id" jdbcType="VARCHAR" property="createId" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="update_id" jdbcType="VARCHAR" property="updateId" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="state" jdbcType="VARCHAR" property="state" />
+        <result column="version" jdbcType="INTEGER" property="version" />
+    </resultMap>
+    
+    <sql id="tableName">
+        lx_homework_submission
+    </sql>
+    
+    <insert id="add" parameterType="com.lxe.lx.pojo.HomeworkSubmission">
+        insert into lx_homework_submission
+        (id, assignment_id, student_id, student_name, content, file_address,
+         submit_time, status, create_id, create_time, state, version)
+        values(
+            #{id}, #{assignmentId}, #{studentId}, #{studentName}, #{content}, #{fileAddress},
+            #{submitTime}, #{status}, #{createId}, #{createTime}, #{state}, #{version}
+        )
+    </insert>
+    
+    <update id="edit" parameterType="com.lxe.lx.pojo.HomeworkSubmission">
+        update lx_homework_submission
+        <set>
+            <if test="content != null">content = #{content},</if>
+            <if test="fileAddress != null">file_address = #{fileAddress},</if>
+            <if test="submitTime != null and submitTime != ''">submit_time = #{submitTime},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateId != null and updateId != ''">update_id = #{updateId},</if>
+            <if test="updateTime != null and updateTime != ''">update_time = #{updateTime},</if>
+            version = version + 1
+        </set>
+        where id = #{id} and version = #{version}
+    </update>
+    
+    <update id="gradeHomework" parameterType="com.lxe.lx.pojo.HomeworkSubmission">
+        update lx_homework_submission
+        set grade = #{grade},
+            feedback = #{feedback},
+            graded_time = #{gradedTime},
+            graded_by = #{gradedBy},
+            status = 'graded',
+            update_id = #{updateId},
+            update_time = #{updateTime},
+            version = version + 1
+        where id = #{id} and version = #{version}
+    </update>
+    
+    <select id="getById" resultMap="HomeworkSubmission">
+        select * from lx_homework_submission
+        where id = #{id} and state = '1'
+    </select>
+    
+    <select id="getByAssignmentAndStudent" resultMap="HomeworkSubmission">
+        select * from lx_homework_submission
+        where assignment_id = #{assignmentId} 
+        and student_id = #{studentId}
+        and state = '1'
+    </select>
+    
+    <update id="delete">
+        update lx_homework_submission
+        set state = '0'
+        where id = #{id}
+    </update>
+    
+    <select id="list" resultMap="HomeworkSubmission">
+        select * from lx_homework_submission
+        where state = '1'
+        <if test="assignmentId != null and assignmentId != ''">
+            and assignment_id = #{assignmentId}
+        </if>
+        <if test="studentId != null and studentId != ''">
+            and student_id = #{studentId}
+        </if>
+        <if test="status != null and status != ''">
+            and status = #{status}
+        </if>
+        <if test="teacherId != null and teacherId != ''">
+            and assignment_id in (
+                select id from lx_homework_assignment 
+                where teacher_id = #{teacherId} and state = '1'
+            )
+        </if>
+        order by create_time desc
+        <if test="start != null and pageSize != null">
+            limit #{start}, #{pageSize}
+        </if>
+    </select>
+    
+    <select id="num" resultType="java.lang.Integer">
+        select count(*) from lx_homework_submission
+        where state = '1'
+        <if test="assignmentId != null and assignmentId != ''">
+            and assignment_id = #{assignmentId}
+        </if>
+        <if test="studentId != null and studentId != ''">
+            and student_id = #{studentId}
+        </if>
+        <if test="status != null and status != ''">
+            and status = #{status}
+        </if>
+        <if test="teacherId != null and teacherId != ''">
+            and assignment_id in (
+                select id from lx_homework_assignment 
+                where teacher_id = #{teacherId} and state = '1'
+            )
+        </if>
+    </select>
+</mapper>
+
