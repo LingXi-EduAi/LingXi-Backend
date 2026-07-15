@@ -102,6 +102,7 @@ public class Tools {
 
     /**
      * 从类路径resources目录中读取指定键的值
+     * 支持 ${ENV_VAR:默认值} 占位符，优先从环境变量解析
      * @param key 要获取的配置项键名
      * @return 配置项对应的值，如果不存在则返回null
      * @throws IOException 当配置文件读取失败时抛出
@@ -117,7 +118,35 @@ public class Tools {
         Properties properties1 = new Properties();
         properties1.load(ins);
         String value = properties1.getProperty(key);
-        return value;
+        // 解析 ${ENV_VAR:default} 占位符
+        return resolvePlaceholders(value);
+    }
+
+    /**
+     * 解析字符串中的 ${ENV_VAR:默认值} 占位符
+     * @param value 待解析的字符串
+     * @return 解析后的值
+     */
+    private static String resolvePlaceholders(String value) {
+        if (value == null) {
+            return null;
+        }
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\$\\{([^:}]+)(?::([^}]*))?\\}");
+        java.util.regex.Matcher matcher = pattern.matcher(value);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String envName = matcher.group(1);
+            String defaultValue = matcher.group(2);
+            // 优先系统环境变量，其次JVM系统属性
+            String envValue = System.getenv(envName);
+            if (envValue == null) {
+                envValue = System.getProperty(envName);
+            }
+            String replacement = envValue != null ? envValue : (defaultValue != null ? defaultValue : "");
+            matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
     /**
