@@ -14,9 +14,9 @@ import com.aliyuncs.http.HttpClientConfig;
 import com.aliyuncs.http.MethodType;
 import com.aliyuncs.profile.DefaultProfile;
 import com.lxe.lx.service.SmsService;
-import com.lxe.lx.util.Tools;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import com.aliyun.*;
@@ -28,6 +28,10 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class SmsServiceImpl implements SmsService {
+    @Value("${aliyun.sms.accessKeyId}")
+    private String accessKeyId;
+    @Value("${aliyun.sms.accessKeySecret}")
+    private String accessKeySecret;
 
     @Override
     public boolean send(Map<String, Object> param, String phoneNumber) throws IOException {
@@ -35,7 +39,7 @@ public class SmsServiceImpl implements SmsService {
             return false;
         }
 
-        DefaultProfile profile = DefaultProfile.getProfile("cn-hangzhou", Tools.getConfigValue("aliyun.sms.accessKeyId"), Tools.getConfigValue("aliyun.sms.accessKeySecret"));//自己账号的AccessKey信息
+        DefaultProfile profile = DefaultProfile.getProfile("cn-hangzhou", accessKeyId, accessKeySecret);//自己账号的AccessKey信息
         IAcsClient client = new DefaultAcsClient(profile);
 
         CommonRequest request = new CommonRequest();

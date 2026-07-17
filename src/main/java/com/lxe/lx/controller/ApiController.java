@@ -9,6 +9,7 @@ import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.service.ApiService;
 import com.lxe.lx.util.ResultConstant;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -31,6 +32,8 @@ public class ApiController {
     private ApiService apiService;
     @Autowired
     private ConversationService conversationService;
+    @Value("${api.key}")
+    private String apiKey;
     @Login
     @RequestMapping(value = "/test", method = RequestMethod.POST)
     public ResultConstant test(HttpServletRequest request) throws Exception {
@@ -77,7 +80,7 @@ public class ApiController {
             url += "&first_id=" + firstId;
         }
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + Tools.getConfigValue("api.key")); // 假设 token 就是 API Key
+        headers.set("Authorization", "Bearer " + apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(headers);
         RestTemplate restTemplate = new RestTemplate();
@@ -100,7 +103,7 @@ public class ApiController {
         url = url+"&limit="+limit+"&sort_by="+sortBy;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + Tools.getConfigValue("api.key")); // 假设 tokenEntity.getToken() 是 API key
+        headers.set("Authorization", "Bearer " + apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(headers);
         RestTemplate restTemplate = new RestTemplate();
@@ -127,7 +130,7 @@ public class ApiController {
 
         // 设置请求头
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + Tools.getConfigValue("api.key"));
+        headers.set("Authorization", "Bearer " + apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // 创建请求实体

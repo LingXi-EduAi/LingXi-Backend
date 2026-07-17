@@ -2,6 +2,7 @@ package com.lxe.lx.service.impl;
 import com.lxe.lx.service.ApiService;
 import com.lxe.lx.util.Tools;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -19,7 +20,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Service("ApiService")
 public class ApiServiceImpl implements ApiService {
     private static final String API_URL = "http://123.207.27.32/v1/chat-messages";
-    private static final String API_KEY = "app-biXDlneU8keswQHN4sgMdxl5"; // 请从安全存储中获取
+    @Value("${api.key}")
+    private String apiKey;
 
     private static final String UPLOAD_URL = "http://123.207.27.32/v1/files/upload";
     private static final ObjectMapper objectMapper = new ObjectMapper(); // 解析 JSON 用
@@ -29,7 +31,7 @@ public class ApiServiceImpl implements ApiService {
 
         // 设置请求头
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + API_KEY);
+        headers.set("Authorization", "Bearer " + apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // 构造请求体
@@ -56,7 +58,7 @@ public class ApiServiceImpl implements ApiService {
 
             // 设置请求头
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + API_KEY);
+            headers.set("Authorization", "Bearer " + apiKey);
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
             // 1. 创建请求体
@@ -93,7 +95,7 @@ public class ApiServiceImpl implements ApiService {
         // 构造请求头
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + API_KEY); // 替换为你项目中获取 key 的方式
+        headers.set("Authorization", "Bearer " + apiKey);
 
         // 构造请求实体
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
@@ -108,7 +110,7 @@ public class ApiServiceImpl implements ApiService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.set("Authorization", "Bearer " + API_KEY);
+            headers.set("Authorization", "Bearer " + apiKey);
             // 构造 multipart 请求体
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             ByteArrayResource fileAsResource = new ByteArrayResource(file.getBytes()) {
