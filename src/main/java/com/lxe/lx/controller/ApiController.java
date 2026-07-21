@@ -9,20 +9,13 @@ import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.service.ApiService;
 import com.lxe.lx.util.ResultConstant;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
 
@@ -33,10 +26,6 @@ public class ApiController {
     private ApiService apiService;
     @Autowired
     private ConversationService conversationService;
-    @Value("${api.base-url}")
-    private String apiBaseUrl;
-    @Value("${api.key}")
-    private String apiKey;
     @Login
     @RequestMapping(value = "/test", method = RequestMethod.POST)
     public ResultConstant test(HttpServletRequest request) throws Exception {
@@ -75,23 +64,13 @@ public class ApiController {
     @RequestMapping(value = "/messages", method = RequestMethod.POST)
     public ResultConstant messages(HttpServletRequest request, String conversationId,@RequestParam(value = "limit", required = false, defaultValue = "20")int limit,String firstId) throws Exception {
         TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
-        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(apiUrl("/messages"))
-                .queryParam("user", tokenEntity.getId())
-                .queryParam("conversation_id", conversationId)
-                .queryParam("limit", limit);
-        if (StringUtils.isNotBlank(firstId)) {
-            urlBuilder.queryParam("first_id", firstId);
-        }
-        String url = urlBuilder.build().encode().toUriString();
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        System.out.println(Tools.decodeUnicode(response.getBody()));
-        // 返回封装的结果
-        return ResultConstant.success(Tools.decodeUnicode(response.getBody()));
+        String response = apiService.getMessages(
+                conversationId,
+                tokenEntity.getId(),
+                limit,
+                firstId
+        );
+        return ResultConstant.success(response);
     }
     @Login
     @RequestMapping(value = "/conversations", method = RequestMethod.POST)
@@ -100,24 +79,8 @@ public class ApiController {
                                         @RequestParam(value = "limit", required = false, defaultValue = "20") int limit,
                                         @RequestParam(value = "sort_by", required = false, defaultValue = "-updated_at") String sortBy) throws Exception {
         TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
-        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(apiUrl("/conversations"))
-                .queryParam("user", tokenEntity.getId())
-                .queryParam("limit", limit)
-                .queryParam("sort_by", sortBy);
-        if (StringUtils.isNotBlank(lastId)) {
-            urlBuilder.queryParam("last_id", lastId);
-        }
-        String url = urlBuilder.build().encode().toUriString();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        System.out.println(Tools.decodeUnicode(response.getBody()));
-        // 返回结果（String JSON）
-        return ResultConstant.success(Tools.decodeUnicode(response.getBody()));
+        String response = apiService.getConversations(tokenEntity.getId(), lastId, limit, sortBy);
+        return ResultConstant.success(response);
     }
     @Login
     @RequestMapping(value = "/deleteConversation", method = RequestMethod.POST)
@@ -128,27 +91,9 @@ public class ApiController {
         if(temp==null){
             return ResultConstant.error("会话id有误");
         }
-        // 请求地址
-        String url = apiUrl("/conversations/" + conversationId);
-
-        // 设置请求体（JSON 格式）
-        Map<String, String> body = new HashMap<>();
-        body.put("user", tokenEntity.getId());
-
-        // 设置请求头
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // 创建请求实体
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
-
-        // 发起 DELETE 请求
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, String.class);
+        String response = apiService.deleteConversation(conversationId, tokenEntity.getId());
         conversationService.deleteByConversationId(conversationId);
-        // 返回响应结果
-        return ResultConstant.success(response.getBody());  // 返回的是 {"result":"success"}
+        return ResultConstant.success(response);
     }
 
     @Login
@@ -166,12 +111,6 @@ public class ApiController {
         }
     }
 
-    private String apiUrl(String path) {
-        return UriComponentsBuilder.fromHttpUrl(apiBaseUrl)
-                .path(path)
-                .build()
-                .toUriString();
-    }
 //    @Login
 //    @RequestMapping(value = "/audioToText", method = RequestMethod.POST)
 //    public ResultConstant audioToText(HttpServletRequest request, @RequestParam(value = "file", required = false) MultipartFile file) throws Exception {

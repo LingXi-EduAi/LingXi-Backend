@@ -10,4 +10,10 @@ public interface ApiService {
     public String renameConversation(String conversationId, String userId, String newName, boolean autoGenerate);
 
     public String audioToText(MultipartFile file, String id);
+
+    String getMessages(String conversationId, String userId, int limit, String firstId);
+
+    String getConversations(String userId, String lastId, int limit, String sortBy);
+
+    String deleteConversation(String conversationId, String userId);
 }

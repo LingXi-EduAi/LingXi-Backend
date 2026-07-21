@@ -1,144 +1,86 @@
 package com.lxe.lx.service.impl;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.lxe.lx.domain.dto.DifyChatflowRequest;
+import com.lxe.lx.gateway.DifyChatApplication;
+import com.lxe.lx.gateway.DifyGateway;
 import com.lxe.lx.service.ApiService;
-import com.lxe.lx.util.Tools;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service("ApiService")
 public class ApiServiceImpl implements ApiService {
-    @Value("${api.base-url}")
-    private String apiBaseUrl;
-    @Value("${api.key}")
-    private String apiKey;
+    private final DifyGateway difyGateway;
 
-    private static final ObjectMapper objectMapper = new ObjectMapper(); // 解析 JSON 用
+    public ApiServiceImpl(DifyGateway difyGateway) {
+        this.difyGateway = difyGateway;
+    }
 
+    @Override
     public String sendMessage(String userInput, String userId, String conversationId) {
-        RestTemplate restTemplate = new RestTemplate();
-
-        // 设置请求头
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // 构造请求体
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("query", userInput);
-        requestBody.put("inputs", new HashMap<>()); // 这里可以传入额外的变量
-        requestBody.put("response_mode", "blocking"); // 或 "blocking"
-        requestBody.put("user", userId);
-        requestBody.put("conversation_id", conversationId);
-        requestBody.put("files", new Object[0]); // 空数组表示没有文件
-        requestBody.put("auto_generate_name", true);
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
-        // 发送 POST 请求
-        ResponseEntity<String> response = restTemplate.exchange(apiUrl("/chat-messages"), HttpMethod.POST, entity, String.class);
-
-        return Tools.decodeUnicode(response.getBody());
+        DifyChatflowRequest request = new DifyChatflowRequest();
+        request.setQuery(userInput);
+        request.setConversationId(conversationId);
+        return json(difyGateway.sendChatMessage(DifyChatApplication.LEGACY, request, userId));
     }
 
-    public String fileUpload(MultipartFile file, String id) {
-        try {
-            RestTemplate restTemplate = new RestTemplate();
-
-            // 设置请求头
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + apiKey);
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-            // 1. 创建请求体
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            ByteArrayResource fileAsResource = new ByteArrayResource(file.getBytes()) {
-                @Override
-                public String getFilename() {
-                    return file.getOriginalFilename(); // 保持原始文件名
-                }
-            };
-            body.add("file",fileAsResource);
-            body.add("user", id);
-
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-            // 4. 发送请求
-            ResponseEntity<String> response = restTemplate.exchange(apiUrl("/files/upload"), HttpMethod.POST, requestEntity, String.class);
-            System.out.println(Tools.decodeUnicode(response.getBody()));
-            return Tools.decodeUnicode(response.getBody()); // 返回服务器响应
-        } catch (IOException e) {
-            throw new RuntimeException("文件上传失败", e);
-        }
-    }
-    public String renameConversation(String conversationId, String userId, String newName, boolean autoGenerate){
-        String url = apiUrl("/conversations/" + conversationId + "/name");
-        // 构造请求体
-        Map<String, Object> body = new HashMap<>();
-        if (!autoGenerate) {
-            body.put("name", newName);
-        }
-        body.put("auto_generate", autoGenerate);
-        body.put("user", userId);
-
-        // 构造请求头
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + apiKey);
-
-        // 构造请求实体
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-
-        // 发送 POST 请求
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-//        Tools.decodeUnicode(response.getBody());
-        return Tools.decodeUnicode(response.getBody());  // 返回完整 JSON 字符串
-    }
-    public String audioToText(MultipartFile file, String id){
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.set("Authorization", "Bearer " + apiKey);
-            // 构造 multipart 请求体
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            ByteArrayResource fileAsResource = new ByteArrayResource(file.getBytes()) {
-                @Override
-                public String getFilename() {
-                    return file.getOriginalFilename(); // 保持原始文件名
-                }
-            };
-            body.add("file", fileAsResource);
-            body.add("user", id);
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<String> response = restTemplate.postForEntity(apiUrl("/audio-to-text"), requestEntity, String.class);
-            return Tools.decodeUnicode(response.getBody());
-        }catch (Exception e) {
-            return "上传失败：" + e.getMessage();
-        }
+    @Override
+    public String fileUpload(MultipartFile file, String userId) {
+        return json(difyGateway.uploadFile(DifyChatApplication.LEGACY, file, userId));
     }
 
-    private String apiUrl(String path) {
-        return UriComponentsBuilder.fromHttpUrl(apiBaseUrl)
-                .path(path)
-                .build()
-                .toUriString();
+    @Override
+    public String renameConversation(
+            String conversationId,
+            String userId,
+            String newName,
+            boolean autoGenerate) {
+        return json(difyGateway.renameConversation(
+                DifyChatApplication.LEGACY,
+                conversationId,
+                userId,
+                newName,
+                autoGenerate
+        ));
     }
 
+    @Override
+    public String audioToText(MultipartFile file, String userId) {
+        return json(difyGateway.audioToText(DifyChatApplication.LEGACY, file, userId));
+    }
+
+    @Override
+    public String getMessages(String conversationId, String userId, int limit, String firstId) {
+        return json(difyGateway.getMessages(
+                DifyChatApplication.LEGACY,
+                conversationId,
+                userId,
+                limit,
+                firstId
+        ));
+    }
+
+    @Override
+    public String getConversations(String userId, String lastId, int limit, String sortBy) {
+        return json(difyGateway.getConversations(
+                DifyChatApplication.LEGACY,
+                userId,
+                lastId,
+                limit,
+                sortBy
+        ));
+    }
+
+    @Override
+    public String deleteConversation(String conversationId, String userId) {
+        return json(difyGateway.deleteConversation(
+                DifyChatApplication.LEGACY,
+                conversationId,
+                userId
+        ));
+    }
+
+    private String json(JsonNode response) {
+        return response.toString();
+    }
 }
-
-

@@ -1,24 +1,21 @@
 package com.lxe.lx.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lxe.lx.annotation.Login;
 import com.lxe.lx.domain.dto.DifyChatflowRequest;
+import com.lxe.lx.gateway.DifyGatewayException;
 import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.service.DifyChatflowService;
 import com.lxe.lx.util.ResultConstant;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.ResourceAccessException;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.function.Supplier;
@@ -31,11 +28,9 @@ public class DifyChatflowController {
     private static final Logger logger = LogManager.getLogger(DifyChatflowController.class);
 
     private final DifyChatflowService chatflowService;
-    private final ObjectMapper objectMapper;
 
-    public DifyChatflowController(DifyChatflowService chatflowService, ObjectMapper objectMapper) {
+    public DifyChatflowController(DifyChatflowService chatflowService) {
         this.chatflowService = chatflowService;
-        this.objectMapper = objectMapper;
     }
 
     @Login
@@ -85,35 +80,13 @@ public class DifyChatflowController {
     private ResultConstant executeDifyRequest(Supplier<JsonNode> request) {
         try {
             return ResultConstant.success(request.get());
-        } catch (HttpStatusCodeException e) {
-            logger.error("Dify Chatflow returned HTTP {}", e.getRawStatusCode());
-            return ResultConstant.error(buildDifyErrorMessage(e));
-        } catch (ResourceAccessException e) {
-            logger.error("Dify Chatflow connection failed: {}", e.getMessage());
-            return ResultConstant.error("无法连接 Dify Chatflow 服务");
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            logger.error("Dify Chatflow configuration error: {}", e.getMessage());
+        } catch (DifyGatewayException e) {
+            logger.error("Dify Chatflow gateway failed, status={}, retryable={}",
+                    e.getHttpStatus(), e.isRetryable());
             return ResultConstant.error(e.getMessage());
         } catch (Exception e) {
             logger.error("Dify Chatflow invocation failed", e);
             return ResultConstant.error("Chatflow 调用失败");
         }
-    }
-
-    private String buildDifyErrorMessage(HttpStatusCodeException exception) {
-        String detail = exception.getResponseBodyAsString();
-        try {
-            JsonNode body = objectMapper.readTree(detail);
-            if (body.hasNonNull("message")) {
-                detail = body.get("message").asText();
-            }
-        } catch (Exception ignored) {
-            // Keep the original response body when Dify does not return JSON.
-        }
-
-        if (StringUtils.isBlank(detail)) {
-            detail = HttpStatus.valueOf(exception.getRawStatusCode()).getReasonPhrase();
-        }
-        return "Dify Chatflow 调用失败：" + StringUtils.abbreviate(detail, 500);
     }
 }
