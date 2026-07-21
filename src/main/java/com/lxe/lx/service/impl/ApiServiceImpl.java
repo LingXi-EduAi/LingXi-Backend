@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -19,11 +20,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service("ApiService")
 public class ApiServiceImpl implements ApiService {
-    private static final String API_URL = "http://123.207.27.32/v1/chat-messages";
+    @Value("${api.base-url}")
+    private String apiBaseUrl;
     @Value("${api.key}")
     private String apiKey;
 
-    private static final String UPLOAD_URL = "http://123.207.27.32/v1/files/upload";
     private static final ObjectMapper objectMapper = new ObjectMapper(); // 解析 JSON 用
 
     public String sendMessage(String userInput, String userId, String conversationId) {
@@ -47,7 +48,7 @@ public class ApiServiceImpl implements ApiService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         // 发送 POST 请求
-        ResponseEntity<String> response = restTemplate.exchange(API_URL, HttpMethod.POST, entity, String.class);
+        ResponseEntity<String> response = restTemplate.exchange(apiUrl("/chat-messages"), HttpMethod.POST, entity, String.class);
 
         return Tools.decodeUnicode(response.getBody());
     }
@@ -75,7 +76,7 @@ public class ApiServiceImpl implements ApiService {
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
             // 4. 发送请求
-            ResponseEntity<String> response = restTemplate.exchange(UPLOAD_URL, HttpMethod.POST, requestEntity, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(apiUrl("/files/upload"), HttpMethod.POST, requestEntity, String.class);
             System.out.println(Tools.decodeUnicode(response.getBody()));
             return Tools.decodeUnicode(response.getBody()); // 返回服务器响应
         } catch (IOException e) {
@@ -83,7 +84,7 @@ public class ApiServiceImpl implements ApiService {
         }
     }
     public String renameConversation(String conversationId, String userId, String newName, boolean autoGenerate){
-        String url = "http://123.207.27.32/v1/conversations/" + conversationId + "/name";
+        String url = apiUrl("/conversations/" + conversationId + "/name");
         // 构造请求体
         Map<String, Object> body = new HashMap<>();
         if (!autoGenerate) {
@@ -124,11 +125,18 @@ public class ApiServiceImpl implements ApiService {
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
             RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<String> response = restTemplate.postForEntity("http://123.207.27.32/v1/audio-to-text", requestEntity, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(apiUrl("/audio-to-text"), requestEntity, String.class);
             return Tools.decodeUnicode(response.getBody());
         }catch (Exception e) {
             return "上传失败：" + e.getMessage();
         }
+    }
+
+    private String apiUrl(String path) {
+        return UriComponentsBuilder.fromHttpUrl(apiBaseUrl)
+                .path(path)
+                .build()
+                .toUriString();
     }
 
 }

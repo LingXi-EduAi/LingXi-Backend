@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -32,6 +33,8 @@ public class ApiController {
     private ApiService apiService;
     @Autowired
     private ConversationService conversationService;
+    @Value("${api.base-url}")
+    private String apiBaseUrl;
     @Value("${api.key}")
     private String apiKey;
     @Login
@@ -72,13 +75,14 @@ public class ApiController {
     @RequestMapping(value = "/messages", method = RequestMethod.POST)
     public ResultConstant messages(HttpServletRequest request, String conversationId,@RequestParam(value = "limit", required = false, defaultValue = "20")int limit,String firstId) throws Exception {
         TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
-        String url = "http://123.207.27.32/v1/messages?user=" + tokenEntity.getId() +
-                "&conversation_id=" + conversationId +
-                "&limit=" + limit;
-
-        if (firstId != null && !firstId.isEmpty()) {
-            url += "&first_id=" + firstId;
+        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(apiUrl("/messages"))
+                .queryParam("user", tokenEntity.getId())
+                .queryParam("conversation_id", conversationId)
+                .queryParam("limit", limit);
+        if (StringUtils.isNotBlank(firstId)) {
+            urlBuilder.queryParam("first_id", firstId);
         }
+        String url = urlBuilder.build().encode().toUriString();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -96,11 +100,14 @@ public class ApiController {
                                         @RequestParam(value = "limit", required = false, defaultValue = "20") int limit,
                                         @RequestParam(value = "sort_by", required = false, defaultValue = "-updated_at") String sortBy) throws Exception {
         TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
-        String url = "http://123.207.27.32/v1/conversations?user=" + tokenEntity.getId();
-        if (lastId != null && !lastId.isEmpty()) {
-            url = url+"&last_id="+lastId;
+        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(apiUrl("/conversations"))
+                .queryParam("user", tokenEntity.getId())
+                .queryParam("limit", limit)
+                .queryParam("sort_by", sortBy);
+        if (StringUtils.isNotBlank(lastId)) {
+            urlBuilder.queryParam("last_id", lastId);
         }
-        url = url+"&limit="+limit+"&sort_by="+sortBy;
+        String url = urlBuilder.build().encode().toUriString();
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + apiKey);
@@ -122,7 +129,7 @@ public class ApiController {
             return ResultConstant.error("会话id有误");
         }
         // 请求地址
-        String url = "http://123.207.27.32/v1/conversations/" + conversationId;
+        String url = apiUrl("/conversations/" + conversationId);
 
         // 设置请求体（JSON 格式）
         Map<String, String> body = new HashMap<>();
@@ -157,6 +164,13 @@ public class ApiController {
         } catch (Exception e) {
             return ResultConstant.error("会话重命名失败：" + e.getMessage());
         }
+    }
+
+    private String apiUrl(String path) {
+        return UriComponentsBuilder.fromHttpUrl(apiBaseUrl)
+                .path(path)
+                .build()
+                .toUriString();
     }
 //    @Login
 //    @RequestMapping(value = "/audioToText", method = RequestMethod.POST)

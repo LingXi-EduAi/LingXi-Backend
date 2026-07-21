@@ -68,9 +68,15 @@ DB_URL=jdbc:mysql://<数据库地址>:3306/lx?allowPublicKeyRetrieval=true&useSS
 DB_USERNAME=<数据库账号>
 DB_PASSWORD=<数据库密码>
 
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=<Redis密码或留空>
+REDIS_DATABASE=0
+
 ALIYUN_SMS_ACCESS_KEY_ID=<短信AccessKey ID>
 ALIYUN_SMS_ACCESS_KEY_SECRET=<短信AccessKey Secret>
 
+API_BASE_URL=http://<旧版Dify地址>:<端口>/v1
 API_KEY=<旧版AI接口密钥>
 
 DIFY_CHATFLOW_BASE_URL=http://<Dify地址>:<端口>/v1
@@ -262,6 +268,15 @@ Token 缺失或过期时返回 HTTP 401：
 
 ## 账号接口
 
+登录和注册同时支持以下两种请求格式，推荐新客户端使用 JSON：
+
+```text
+application/json
+application/x-www-form-urlencoded
+```
+
+使用表单格式时，Body 必须是 `userId=...&password=...` 形式，不能发送 JSON 字符串。
+
 ### 注册
 
 ```http
@@ -282,6 +297,12 @@ Content-Type: application/json
 
 `state=1` 表示教师，`state=2` 表示学生。
 
+表单请求使用相同字段，例如：
+
+```text
+userId=student001&name=测试学生&email=student001%40example.com&phoneNumber=13900000001&password=123456&state=2
+```
+
 ### 登录
 
 ```http
@@ -297,6 +318,12 @@ Content-Type: application/json
 ```
 
 成功响应的 `data` 是登录 Token。
+
+表单请求示例：
+
+```text
+userId=student001&password=123456
+```
 
 ## Chatflow 中转
 

@@ -27,10 +27,10 @@
 在后端 `.env` 中配置：
 
 ```properties
-DIFY_CHATFLOW_BASE_URL=http://120.27.159.107/v1
+DIFY_CHATFLOW_BASE_URL=<chatflow-base-url>/v1
 DIFY_CHATFLOW_API_KEY=<真实Chatflow API Key>
 
-DIFY_WORKFLOW_BASE_URL=http://120.26.144.127:6004/v1
+DIFY_WORKFLOW_BASE_URL=<workflow-base-url>/v1
 DIFY_WORKFLOW_API_KEY=<真实Workflow API Key>
 ```
 
