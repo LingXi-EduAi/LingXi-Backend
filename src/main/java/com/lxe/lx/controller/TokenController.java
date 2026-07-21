@@ -88,6 +88,7 @@ public class TokenController {
                 tokenEntity.setUpdateTime(time);
                 tokenEntity.setIp(ip);
                 tokenEntity.setState("1");
+                tokenEntity.setRole(customerTemp.getState());
 
                 // Redis 操作对象
                 ValueOperations<String, TokenEntity> ops = redisTemplate.opsForValue();

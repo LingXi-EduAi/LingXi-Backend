@@ -1,6 +1,7 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.dto.ClassGroupingDTO;
 import com.lxe.lx.domain.dto.CustomerDTO;
 import com.lxe.lx.domain.dto.ValidDTO;
@@ -72,14 +73,11 @@ public class CustomerController {
             return ResultConstant.illegalParams("密码不能为空");
         }else if(!Tools.checkMobileNumber(customer.getPhoneNumber())){
             return ResultConstant.illegalParams("号码格式错误");
-        }else if (StringUtils.isBlank(customer.getState())) {
-            return ResultConstant.illegalParams("请选择用户身份");
-        }else if (!"1".equals(customer.getState()) && !"2".equals(customer.getState())) {
-            return ResultConstant.illegalParams("用户身份选择错误");
         }
 //        else if (StringUtils.isBlank(customer.getName())) {
 //            return ResultConstant.illegalParams("用户名不能为空");
 //        }
+        customer.setState(TokenEntity.ROLE_STUDENT);
         try{
             Customer temp = customerService.getCustomerByUserId(customer.getUserId());
             if(temp!=null && !"0".equals(temp.getState())){
@@ -140,6 +138,8 @@ public class CustomerController {
         }
         try{
             TokenEntity tokenEntity = (TokenEntity)request.getAttribute(ORG_ID_KEY);
+            customer.setId(tokenEntity.getId());
+            customer.setState(null);
             Customer temp = customerService.getCustomerById(customer.getId());
             if(temp==null){
                 return ResultConstant.error("当前账户不存在");
@@ -273,6 +273,7 @@ public class CustomerController {
         }
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/list", method = RequestMethod.POST)
     public ResultConstant list(HttpServletRequest request, @RequestBody CustomerQO customerQO) throws Exception {
 //    public ResultConstant list(HttpServletRequest request, CustomerQO customerQO) throws Exception {

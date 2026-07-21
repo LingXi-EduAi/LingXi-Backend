@@ -6,6 +6,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class TokenEntity {
+    public static final String ROLE_TEACHER = "1";
+    public static final String ROLE_STUDENT = "2";
+
     private String id;
     private String token;
     /**
@@ -25,4 +28,8 @@ public class TokenEntity {
      * 状态
      */
     private String state;
+    /**
+     * Customer role: 1 = teacher, 2 = student.
+     */
+    private String role;
 }

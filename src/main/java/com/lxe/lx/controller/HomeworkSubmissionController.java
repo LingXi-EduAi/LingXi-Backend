@@ -1,6 +1,7 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.dto.HomeworkSubmissionDTO;
 import com.lxe.lx.domain.dto.ValidDTO;
 import com.lxe.lx.domain.qo.HomeworkSubmissionQO;
@@ -89,6 +90,9 @@ public class HomeworkSubmissionController {
             if (temp == null) {
                 return ResultConstant.error("提交记录不存在");
             }
+            if (isStudent(tokenEntity) && !tokenEntity.getId().equals(temp.getStudentId())) {
+                return ResultConstant.notAuthorized();
+            }
             if (!temp.getVersion().equals(submission.getVersion())) {
                 return ResultConstant.error("数据已修改，请刷新后重试");
             }
@@ -115,6 +119,7 @@ public class HomeworkSubmissionController {
      * 教师批改作业
      */
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/grade", method = RequestMethod.POST)
     public ResultConstant grade(HttpServletRequest request, @RequestBody HomeworkSubmission submission) {
         if (submission == null || StringUtils.isBlank(submission.getId())) {
@@ -154,9 +159,13 @@ public class HomeworkSubmissionController {
     @RequestMapping(value = "/detail", method = RequestMethod.POST)
     public ResultConstant detail(HttpServletRequest request, String id) {
         try {
+            TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
             HomeworkSubmission submission = homeworkSubmissionService.getById(id);
             if (submission == null) {
                 return ResultConstant.error("提交记录不存在");
+            }
+            if (isStudent(tokenEntity) && !tokenEntity.getId().equals(submission.getStudentId())) {
+                return ResultConstant.notAuthorized();
             }
             return ResultConstant.success(submission);
         } catch (Exception e) {
@@ -198,9 +207,13 @@ public class HomeworkSubmissionController {
             return ResultConstant.illegalParams("id不能为空");
         }
         try {
+            TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
             HomeworkSubmission submission = homeworkSubmissionService.getById(id);
             if (submission == null) {
                 return ResultConstant.error("提交记录不存在");
+            }
+            if (isStudent(tokenEntity) && !tokenEntity.getId().equals(submission.getStudentId())) {
+                return ResultConstant.notAuthorized();
             }
             ResultConstant ref = homeworkSubmissionService.delete(id);
             return ref;
@@ -217,6 +230,10 @@ public class HomeworkSubmissionController {
     @Login
     @RequestMapping(value = "/list", method = RequestMethod.POST)
     public ResultConstant list(HttpServletRequest request, @RequestBody HomeworkSubmissionQO submissionQO) throws Exception {
+        TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+        if (isStudent(tokenEntity)) {
+            submissionQO.setStudentId(tokenEntity.getId());
+        }
         ValidDTO validDTO = submissionQO.validPageParams(submissionQO);
         if (!validDTO.getResult()) {
             return ResultConstant.illegalParams(validDTO.getMsg());
@@ -235,6 +252,10 @@ public class HomeworkSubmissionController {
             logger.error("list->error" + e.getMessage());
             return ResultConstant.error("查询失败");
         }
+    }
+
+    private boolean isStudent(TokenEntity tokenEntity) {
+        return tokenEntity != null && TokenEntity.ROLE_STUDENT.equals(tokenEntity.getRole());
     }
 }
 

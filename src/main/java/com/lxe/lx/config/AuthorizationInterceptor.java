@@ -2,6 +2,7 @@ package com.lxe.lx.config;
 import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.qo.TokenQO;
 import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.service.TokenService;
@@ -111,10 +112,16 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        Login annotation = null;
+        Login login = null;
+        TeacherOnly teacherOnly = null;
         if (handler instanceof HandlerMethod) {
-            annotation = ((HandlerMethod) handler).getMethodAnnotation(Login.class);
-            if (annotation == null) {
+            HandlerMethod handlerMethod = (HandlerMethod) handler;
+            login = handlerMethod.getMethodAnnotation(Login.class);
+            teacherOnly = handlerMethod.getMethodAnnotation(TeacherOnly.class);
+            if (teacherOnly == null) {
+                teacherOnly = handlerMethod.getBeanType().getAnnotation(TeacherOnly.class);
+            }
+            if (login == null && teacherOnly == null) {
                 return true;
             }
         } else {
@@ -152,19 +159,36 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             return sendErrorResponse(response, "登录过期，请重新登录");
         }
 
+        if (teacherOnly != null && !TokenEntity.ROLE_TEACHER.equals(tokenEntity.getRole())) {
+            return sendForbiddenResponse(response);
+        }
+
         request.setAttribute(ORG_ID_KEY, tokenEntity);
         return true;
     }
 
     private boolean sendErrorResponse(HttpServletResponse response, String message) throws Exception {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=utf-8");
         PrintWriter out = response.getWriter();
-        out.write(JSON.toJSONString(ResultConstant.init(ResultConstant.TOKEN_INVALID, message, "")));
+        out.write(JSON.toJSONString(ResultConstant.init(ResultConstant.TOKEN_INVALID, message, null)));
         out.flush();
         out.close();
         return false;
     }
+
+    private boolean sendForbiddenResponse(HttpServletResponse response) throws Exception {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json; charset=utf-8");
+        PrintWriter out = response.getWriter();
+        out.write(JSON.toJSONString(ResultConstant.notAuthorized()));
+        out.flush();
+        out.close();
+        return false;
+    }
+
     private boolean isTokenEntityInvalid(TokenEntity tokenEntity) {
         return tokenEntity == null ||
                 tokenEntity.getId() == null ||

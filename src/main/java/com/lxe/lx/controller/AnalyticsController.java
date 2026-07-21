@@ -1,6 +1,7 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.util.ResultConstant;
 import com.lxe.lx.pojo.HomeworkSubmission;
 import com.lxe.lx.pojo.HomeworkAssignment;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/analytics")
+@TeacherOnly
 public class AnalyticsController {
 
     @Autowired

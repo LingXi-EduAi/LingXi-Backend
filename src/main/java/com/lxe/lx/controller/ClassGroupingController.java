@@ -1,6 +1,7 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.dto.ClassGroupingDTO;
 import com.lxe.lx.domain.dto.ValidDTO;
 import com.lxe.lx.domain.qo.ClassGroupingQO;
@@ -28,6 +29,7 @@ import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
 
 @RestController
 @RequestMapping("/classGrouping")
+@TeacherOnly
 public class ClassGroupingController {
     Logger logger = LogManager.getLogger(ClassGroupingController.class);
     @Autowired

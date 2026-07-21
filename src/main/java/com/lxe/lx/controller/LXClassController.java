@@ -1,5 +1,6 @@
 package com.lxe.lx.controller;
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.dto.ClassGroupingDTO;
 import com.lxe.lx.domain.dto.LXClassDTO;
 import com.lxe.lx.domain.dto.ValidDTO;
@@ -37,6 +38,7 @@ public class LXClassController {
     @Autowired
     private CustomerService customerService;
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/add", method = RequestMethod.POST)
         public ResultConstant add(HttpServletRequest request, @RequestBody LXClass lxClass) {
 //    public ResultConstant add(HttpServletRequest request, LXClass lxClass) {
@@ -83,6 +85,7 @@ public class LXClassController {
         }
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
         public ResultConstant edit(HttpServletRequest request, @RequestBody LXClass lxClass) {
 //    public ResultConstant edit(HttpServletRequest request, LXClass lxClass) {
@@ -185,6 +188,7 @@ public class LXClassController {
         }
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public ResultConstant delete(HttpServletResponse response, String id) throws Exception {
         if (StringUtils.isBlank(id)) {

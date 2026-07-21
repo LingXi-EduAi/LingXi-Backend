@@ -1,6 +1,7 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.qo.CustomerQO;
 import com.lxe.lx.domain.qo.GradeQO;
 import com.lxe.lx.pojo.Customer;
@@ -35,6 +36,7 @@ public class GradeAnalyseController {
     @Autowired
     private CustomerService customerService;
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/overviewTeacher", method = RequestMethod.POST)
     public ResultConstant overviewTeacher(HttpServletRequest request, @RequestBody GradeAnalyse gradeAnalyse) {
         if (gradeAnalyse == null || StringUtils.isBlank(gradeAnalyse.getClassId())) {
@@ -85,6 +87,7 @@ public class GradeAnalyseController {
         }
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/gradeDistributionTeacher", method = RequestMethod.POST)
     public ResultConstant gradeDistributionTeacher(HttpServletRequest request, @RequestBody GradeAnalyse gradeAnalyse) {
         if (gradeAnalyse == null || StringUtils.isBlank(gradeAnalyse.getClassId())) {
@@ -123,6 +126,7 @@ public class GradeAnalyseController {
         }
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/unitProgressTeacher", method = RequestMethod.POST)
     public ResultConstant unitProgressTeacher(HttpServletRequest request, @RequestBody GradeAnalyse gradeAnalyse) {
         if (gradeAnalyse == null || StringUtils.isBlank(gradeAnalyse.getClassId())) {
@@ -162,6 +166,7 @@ public class GradeAnalyseController {
         }
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/learningTrendTeacher", method = RequestMethod.POST)
     public ResultConstant learningTrendTeacher(HttpServletRequest request, @RequestBody GradeAnalyse gradeAnalyse) {
         if (gradeAnalyse == null || StringUtils.isBlank(gradeAnalyse.getClassId())) {
@@ -206,7 +211,11 @@ public class GradeAnalyseController {
     @Login
     @RequestMapping(value = "/overviewStudent", method = RequestMethod.POST)
     public ResultConstant overviewStudent(HttpServletRequest request, @RequestBody GradeQO gradeQO) {
-        if (gradeQO == null || StringUtils.isBlank(gradeQO.getStudentId())) {
+        if (gradeQO == null) {
+            return ResultConstant.illegalParams("请求参数不能为空");
+        }
+        applyStudentScope(request, gradeQO);
+        if (StringUtils.isBlank(gradeQO.getStudentId())) {
             return ResultConstant.illegalParams("学生ID不能为空");
         }
         try{
@@ -231,7 +240,11 @@ public class GradeAnalyseController {
     @Login
     @RequestMapping(value = "/gradeDistributionStudent", method = RequestMethod.POST)
     public ResultConstant gradeDistributionStudent(HttpServletRequest request, @RequestBody GradeQO gradeQO) {
-        if (gradeQO == null || StringUtils.isBlank(gradeQO.getStudentId())) {
+        if (gradeQO == null) {
+            return ResultConstant.illegalParams("请求参数不能为空");
+        }
+        applyStudentScope(request, gradeQO);
+        if (StringUtils.isBlank(gradeQO.getStudentId())) {
             return ResultConstant.illegalParams("学生ID不能为空");
         }
         try {
@@ -263,7 +276,11 @@ public class GradeAnalyseController {
     @Login
     @RequestMapping(value = "/unitProgressStudent", method = RequestMethod.POST)
     public ResultConstant unitProgressStudent(HttpServletRequest request, @RequestBody GradeQO gradeQO) {
-        if (gradeQO == null || StringUtils.isBlank(gradeQO.getStudentId())) {
+        if (gradeQO == null) {
+            return ResultConstant.illegalParams("请求参数不能为空");
+        }
+        applyStudentScope(request, gradeQO);
+        if (StringUtils.isBlank(gradeQO.getStudentId())) {
             return ResultConstant.illegalParams("学生ID不能为空");
         }else if (StringUtils.isBlank(gradeQO.getClassId())) {
             return ResultConstant.illegalParams("班级不能为空");
@@ -295,7 +312,11 @@ public class GradeAnalyseController {
     @Login
     @RequestMapping(value = "/learningTrendStudent", method = RequestMethod.POST)
     public ResultConstant learningTrendStudent(HttpServletRequest request, @RequestBody GradeQO gradeQO) {
-        if (gradeQO == null || StringUtils.isBlank(gradeQO.getStudentId())) {
+        if (gradeQO == null) {
+            return ResultConstant.illegalParams("请求参数不能为空");
+        }
+        applyStudentScope(request, gradeQO);
+        if (StringUtils.isBlank(gradeQO.getStudentId())) {
             return ResultConstant.illegalParams("学生ID不能为空");
         }else if (StringUtils.isBlank(gradeQO.getClassId())) {
             return ResultConstant.illegalParams("班级不能为空");
@@ -322,6 +343,13 @@ public class GradeAnalyseController {
             logger.error("unitProgressStudent->error"+e.getMessage());
 
             return ResultConstant.error("查询失败");
+        }
+    }
+
+    private void applyStudentScope(HttpServletRequest request, GradeQO gradeQO) {
+        TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+        if (tokenEntity != null && TokenEntity.ROLE_STUDENT.equals(tokenEntity.getRole())) {
+            gradeQO.setStudentId(tokenEntity.getId());
         }
     }
 }

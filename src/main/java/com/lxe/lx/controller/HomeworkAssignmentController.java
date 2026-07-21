@@ -1,6 +1,7 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.dto.HomeworkAssignmentDTO;
 import com.lxe.lx.domain.dto.ValidDTO;
 import com.lxe.lx.domain.qo.HomeworkAssignmentQO;
@@ -35,6 +36,7 @@ public class HomeworkAssignmentController {
      * 添加作业发布（教师布置作业）
      */
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/add", method = RequestMethod.POST)
     public ResultConstant add(HttpServletRequest request, @RequestBody HomeworkAssignment homework) {
         if (homework == null || StringUtils.isBlank(homework.getTitle())) {
@@ -74,6 +76,7 @@ public class HomeworkAssignmentController {
      * 编辑作业发布
      */
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
     public ResultConstant edit(HttpServletRequest request, @RequestBody HomeworkAssignment homework) {
         if (homework == null || StringUtils.isBlank(homework.getId())) {
@@ -103,6 +106,7 @@ public class HomeworkAssignmentController {
      * 更新作业状态
      */
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/updateStatus", method = RequestMethod.POST)
     public ResultConstant updateStatus(HttpServletRequest request, @RequestBody HomeworkAssignment homework) {
         if (homework == null || StringUtils.isBlank(homework.getId())) {
@@ -153,6 +157,7 @@ public class HomeworkAssignmentController {
      * 删除作业发布
      */
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public ResultConstant delete(HttpServletRequest request, String id) {
         if (StringUtils.isBlank(id)) {

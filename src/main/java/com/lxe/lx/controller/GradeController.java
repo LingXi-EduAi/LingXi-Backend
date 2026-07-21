@@ -1,5 +1,6 @@
 package com.lxe.lx.controller;
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.dto.GradeDTO;
 import com.lxe.lx.domain.dto.LXClassDTO;
 import com.lxe.lx.domain.dto.ValidDTO;
@@ -37,6 +38,7 @@ public class GradeController {
     @Autowired
     private LXClassService lxClassService;
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/add", method = RequestMethod.POST)
 //    public ResultConstant add(HttpServletRequest request,Grade grade) {
     public ResultConstant add(HttpServletRequest request, @RequestBody Grade grade) {
@@ -84,6 +86,7 @@ public class GradeController {
         }
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
     public ResultConstant edit(HttpServletRequest request, @RequestBody Grade grade) {
 //    public ResultConstant edit(HttpServletRequest request, Grade grade) {
@@ -130,6 +133,10 @@ public class GradeController {
     public ResultConstant list(HttpServletRequest request, @RequestBody GradeQO gradeQO) throws Exception {
 //    public ResultConstant list(HttpServletRequest request, LXClassQO lxClassQO) throws Exception {
 
+        TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+        if (isStudent(tokenEntity)) {
+            gradeQO.setStudentId(tokenEntity.getId());
+        }
         ValidDTO validDTO = gradeQO.validPageParams(gradeQO);
         if (!validDTO.getResult()) {
             return ResultConstant.illegalParams(validDTO.getMsg());
@@ -158,8 +165,12 @@ public class GradeController {
             ResultConstant.illegalParams("id不能为空");
         }
         try {
+            TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
             Grade temp = gradeService.getGradeById(grade.getId());
             if(temp!=null){
+                if (isStudent(tokenEntity) && !tokenEntity.getId().equals(temp.getStudentId())) {
+                    return ResultConstant.notAuthorized();
+                }
                 return ResultConstant.success(temp);
             }else {
                 return ResultConstant.error("当前成绩不存在");
@@ -171,6 +182,7 @@ public class GradeController {
         }
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public ResultConstant delete(HttpServletResponse response, String id) throws Exception {
         if (StringUtils.isBlank(id)) {
@@ -188,5 +200,9 @@ public class GradeController {
             logger.error("delete->error"+e.getMessage());
             return ResultConstant.error("删除失败");
         }
+    }
+
+    private boolean isStudent(TokenEntity tokenEntity) {
+        return tokenEntity != null && TokenEntity.ROLE_STUDENT.equals(tokenEntity.getRole());
     }
 }

@@ -1,6 +1,7 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.dto.DocumentDTO;
 import com.lxe.lx.domain.dto.ValidDTO;
 import com.lxe.lx.domain.qo.DocumentQO;
@@ -33,6 +34,7 @@ public class DocumentController {
     private DocumentService documentService;
 
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/add", method = RequestMethod.POST)
     public ResultConstant add(HttpServletRequest request, @RequestBody Document document) {
         if (document == null || StringUtils.isBlank(document.getName())) {
@@ -58,6 +60,7 @@ public class DocumentController {
         }
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
     public ResultConstant edit(HttpServletRequest request, @RequestBody Document document) {
         if (document == null || StringUtils.isBlank(document.getName())) {
@@ -130,6 +133,7 @@ public class DocumentController {
 
     }
     @Login
+    @TeacherOnly
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public ResultConstant delete(HttpServletResponse response, String id) throws Exception {
         if (StringUtils.isBlank(id)) {
