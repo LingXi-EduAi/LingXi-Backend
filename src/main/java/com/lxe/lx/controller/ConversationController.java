@@ -89,6 +89,9 @@ public class ConversationController {
             if(temp==null){
                 return ResultConstant.error("会话不存在");
             }
+            if (!tokenEntity.getId().equals(temp.getStudentId())) {
+                return ResultConstant.error("无权修改此会话");
+            }
             if (!temp.getVersion().equals(conversation.getVersion())) {
                 return ResultConstant.error("数据已修改，请刷新后重试");
             }
@@ -110,6 +113,8 @@ public class ConversationController {
             return ResultConstant.illegalParams(validDTO.getMsg());
         }
         try {
+            TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+            conversationQO.setStudentId(tokenEntity.getId());
             ConversationDTO conversationDTO = new ConversationDTO();
             int count = conversationService.num(conversationQO);
             if (count > 0) {
@@ -126,17 +131,19 @@ public class ConversationController {
     @Login
     @RequestMapping(value = "/detail", method = RequestMethod.POST)
     public ResultConstant detail(HttpServletRequest request,@RequestBody Conversation conversation) {
-//    public ResultConstant detail(HttpServletRequest request, ClassGrouping classGrouping) {
         if (StringUtils.isBlank(conversation.getId())) {
-            ResultConstant.illegalParams("id不能为空");
+            return ResultConstant.illegalParams("id不能为空");
         }
         try {
             Conversation temp = conversationService.getConversationById(conversation.getId());
-            if(temp!=null){
-                return ResultConstant.success(temp);
-            }else {
+            if(temp==null){
                 return ResultConstant.error("当前会话记录不存在");
             }
+            TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+            if (!tokenEntity.getId().equals(temp.getStudentId())) {
+                return ResultConstant.error("无权查看此会话");
+            }
+            return ResultConstant.success(temp);
         } catch (Exception e) {
             e.printStackTrace();
 
@@ -147,7 +154,7 @@ public class ConversationController {
     }
     @Login
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public ResultConstant delete(HttpServletResponse response, String id) throws Exception {
+    public ResultConstant delete(HttpServletRequest request, String id) throws Exception {
         if (StringUtils.isBlank(id)) {
             return ResultConstant.illegalParams("id不能为空");
         }
@@ -155,6 +162,10 @@ public class ConversationController {
             Conversation conversation= conversationService.getConversationById(id);
             if (conversation == null) {
                 return ResultConstant.error("当前会话记录不存在");
+            }
+            TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+            if (!tokenEntity.getId().equals(conversation.getStudentId())) {
+                return ResultConstant.error("无权删除此会话");
             }
             ResultConstant ref = conversationService.deleteById(id);
             return ref;
