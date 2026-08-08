@@ -97,3 +97,24 @@
 ## 4. BE-05 范围
 
 BE-05 只冻结事件公共结构、事件类型、payload 字段和示例，不规定具体 HTTP 路径、SSE 连接方式、Dify 事件映射、事件持久化或断线续传实现。这些能力由后续 BE 任务按本协议输出事件。
+
+## 5. BE-06 Dify 事件适配
+
+|Dify event|LingXiEvent|
+|---|---|
+|message、agent_message|answer_delta|
+|node_started、node_finished|node_progress|
+|message_end|task_finished|
+|error|task_error|
+|ping|忽略，由后端独立发送 SSE 心跳注释|
+|其他未知事件|忽略，不中断当前流|
+
+Dify 原始 `task_id`、`message_id` 仅作为 payload 中的外部标识。错误事件只向前端暴露安全消息，不输出 API Key、内部地址或异常堆栈。
+
+## 6. BE-06 当前边界
+
+BE-06 使用 `POST /api/ai/task/stream` 在同一个 HTTP 请求中直接返回 SSE。原有阻塞接口 `POST /api/ai/task` 保持不变。
+
+由于浏览器原生 `EventSource` 不支持 POST 和自定义 Token Header，前端应使用 `fetch + ReadableStream` 消费该接口。反向代理必须关闭响应缓冲，并保证读取超时大于后端 SSE 超时。
+
+本阶段生成的 `taskId` 只标识当前流式请求，尚未持久化。浏览器断开后，后端会取消对应 Dify 连接并清理心跳任务，因此当前版本不支持断线续传。最终的“创建任务后再订阅事件”接口 `GET /api/ai/tasks/{taskId}/events` 必须等 BE-07 至 BE-09 完成停止、事件存储和任务持久化后再提供，避免形成重启即丢失的内存任务系统。

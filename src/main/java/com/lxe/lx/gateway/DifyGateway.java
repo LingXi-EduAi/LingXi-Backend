@@ -9,6 +9,13 @@ import java.util.Map;
 public interface DifyGateway {
     JsonNode sendChatMessage(DifyChatApplication application, DifyChatflowRequest request, String userId);
 
+    DifyStream streamChatMessage(
+            DifyChatApplication application,
+            DifyChatflowRequest request,
+            String userId,
+            DifyStreamListener listener
+    );
+
     JsonNode getMessages(
             DifyChatApplication application,
             String conversationId,

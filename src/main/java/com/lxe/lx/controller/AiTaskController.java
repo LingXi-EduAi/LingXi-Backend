@@ -14,8 +14,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
 
@@ -56,5 +60,25 @@ public class AiTaskController {
             logger.error("AI task invocation failed", e);
             return ResultConstant.error("AI 任务调用失败");
         }
+    }
+
+    @Login
+    @PostMapping("/task/stream")
+    public SseEmitter streamTask(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            @RequestBody(required = false) AiTaskRequest aiTaskRequest) {
+        if (aiTaskRequest == null || StringUtils.isBlank(aiTaskRequest.getQuery())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "query 不能为空");
+        }
+
+        TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+        if (tokenEntity == null || StringUtils.isBlank(tokenEntity.getId())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "无法获取当前登录用户");
+        }
+
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("X-Accel-Buffering", "no");
+        return aiTaskService.streamTask(aiTaskRequest, tokenEntity.getId());
     }
 }

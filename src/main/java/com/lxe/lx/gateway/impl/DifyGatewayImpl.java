@@ -6,7 +6,18 @@ import com.lxe.lx.domain.dto.DifyChatflowRequest;
 import com.lxe.lx.gateway.DifyChatApplication;
 import com.lxe.lx.gateway.DifyGateway;
 import com.lxe.lx.gateway.DifyGatewayException;
+import com.lxe.lx.gateway.DifyStream;
+import com.lxe.lx.gateway.DifyStreamListener;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -25,16 +36,25 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class DifyGatewayImpl implements DifyGateway {
+    private static final Logger logger = LogManager.getLogger(DifyGatewayImpl.class);
+    private static final okhttp3.MediaType JSON_MEDIA_TYPE =
+            okhttp3.MediaType.parse("application/json; charset=utf-8");
+
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final OkHttpClient streamingClient;
     private final Credentials legacyCredentials;
     private final Credentials chatflowCredentials;
     private final Credentials workflowCredentials;
@@ -47,9 +67,15 @@ public class DifyGatewayImpl implements DifyGateway {
             @Value("${dify.chatflow.base-url}") String chatflowBaseUrl,
             @Value("${dify.chatflow.api-key}") String chatflowApiKey,
             @Value("${dify.workflow.base-url}") String workflowBaseUrl,
-            @Value("${dify.workflow.api-key}") String workflowApiKey) {
+            @Value("${dify.workflow.api-key}") String workflowApiKey,
+            @Value("${dify.stream.connect-timeout-ms}") long connectTimeoutMs,
+            @Value("${dify.stream.read-timeout-ms:0}") long streamReadTimeoutMs) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.streamingClient = new OkHttpClient.Builder()
+                .connectTimeout(connectTimeoutMs, TimeUnit.MILLISECONDS)
+                .readTimeout(streamReadTimeoutMs, TimeUnit.MILLISECONDS)
+                .build();
         this.legacyCredentials = new Credentials("旧版 Chatflow", legacyBaseUrl, legacyApiKey);
         this.chatflowCredentials = new Credentials("Chatflow", chatflowBaseUrl, chatflowApiKey);
         this.workflowCredentials = new Credentials("Workflow", workflowBaseUrl, workflowApiKey);
@@ -81,6 +107,110 @@ public class DifyGatewayImpl implements DifyGateway {
                 HttpMethod.POST,
                 jsonEntity(credentials, body)
         );
+    }
+
+    @Override
+    public DifyStream streamChatMessage(
+            DifyChatApplication application,
+            DifyChatflowRequest request,
+            String userId,
+            DifyStreamListener listener) {
+        if (request == null) {
+            throw invalid("Chatflow 请求不能为空");
+        }
+        if (listener == null) {
+            throw invalid("流式事件监听器不能为空");
+        }
+        requireUser(userId);
+        Credentials credentials = chatCredentials(application);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("inputs", request.getInputs() == null ? Collections.emptyMap() : request.getInputs());
+        body.put("query", request.getQuery());
+        body.put("response_mode", "streaming");
+        body.put("conversation_id", StringUtils.defaultString(request.getConversationId()));
+        body.put("user", userId);
+        body.put("files", request.getFiles() == null ? Collections.emptyList() : request.getFiles());
+        body.put("auto_generate_name", request.isAutoGenerateName());
+
+        final String requestJson;
+        try {
+            requestJson = objectMapper.writeValueAsString(body);
+        } catch (IOException e) {
+            throw new DifyGatewayException("序列化 Chatflow 流式请求失败", null, false, e);
+        }
+
+        Request httpRequest = new Request.Builder()
+                .url(uri(credentials, "/chat-messages").build().encode().toUriString())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + credentials.apiKey)
+                .header(HttpHeaders.ACCEPT, MediaType.TEXT_EVENT_STREAM_VALUE)
+                .post(RequestBody.create(JSON_MEDIA_TYPE, requestJson))
+                .build();
+        Call call = streamingClient.newCall(httpRequest);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call failedCall, IOException exception) {
+                if (!failedCall.isCanceled()) {
+                    listener.onError(new DifyGatewayException(
+                            "无法连接 Dify 服务：Chatflow 流式调用",
+                            null,
+                            true,
+                            exception
+                    ));
+                }
+            }
+
+            @Override
+            public void onResponse(Call responseCall, Response response) {
+                try (Response closeableResponse = response) {
+                    if (!response.isSuccessful()) {
+                        String responseText = response.body() == null ? "" : response.body().string();
+                        listener.onError(new DifyGatewayException(
+                                "Chatflow 流式调用失败：" + extractErrorDetail(responseText, response.message()),
+                                response.code(),
+                                response.code() == 429 || response.code() >= 500,
+                                null
+                        ));
+                        return;
+                    }
+                    ResponseBody responseBody = response.body();
+                    if (responseBody == null) {
+                        listener.onError(new DifyGatewayException(
+                                "Chatflow 流式调用返回空响应",
+                                response.code(),
+                                false,
+                                null
+                        ));
+                        return;
+                    }
+                    readEventStream(responseCall, responseBody, listener);
+                    if (!responseCall.isCanceled()) {
+                        listener.onComplete();
+                    }
+                } catch (IOException e) {
+                    if (!responseCall.isCanceled()) {
+                        listener.onError(new DifyGatewayException(
+                                "读取 Dify 流式响应失败",
+                                null,
+                                true,
+                                e
+                        ));
+                    }
+                } catch (RuntimeException e) {
+                    boolean alreadyCanceled = responseCall.isCanceled();
+                    responseCall.cancel();
+                    if (!alreadyCanceled) {
+                        listener.onError(new DifyGatewayException(
+                                "处理 Dify 流式响应失败",
+                                null,
+                                false,
+                                e
+                        ));
+                    }
+                }
+            }
+        });
+        return call::cancel;
     }
 
     @Override
@@ -259,7 +389,11 @@ public class DifyGatewayImpl implements DifyGateway {
     }
 
     private String extractErrorDetail(HttpStatusCodeException exception) {
-        String detail = exception.getResponseBodyAsString();
+        return extractErrorDetail(exception.getResponseBodyAsString(), exception.getStatusText());
+    }
+
+    private String extractErrorDetail(String responseText, String fallback) {
+        String detail = responseText;
         try {
             JsonNode body = objectMapper.readTree(detail);
             if (body.hasNonNull("message")) {
@@ -269,9 +403,44 @@ public class DifyGatewayImpl implements DifyGateway {
             // Preserve a shortened response when Dify does not return JSON.
         }
         if (StringUtils.isBlank(detail)) {
-            detail = exception.getStatusText();
+            detail = fallback;
         }
         return StringUtils.abbreviate(detail, 500);
+    }
+
+    private void readEventStream(
+            Call call,
+            ResponseBody responseBody,
+            DifyStreamListener listener) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                responseBody.byteStream(),
+                StandardCharsets.UTF_8))) {
+            StringBuilder data = new StringBuilder();
+            String line;
+            while (!call.isCanceled() && (line = reader.readLine()) != null) {
+                if (line.isEmpty()) {
+                    dispatchStreamData(data, listener);
+                    data.setLength(0);
+                } else if (line.startsWith("data:")) {
+                    if (data.length() > 0) {
+                        data.append('\n');
+                    }
+                    data.append(StringUtils.stripStart(line.substring(5), " "));
+                }
+            }
+            dispatchStreamData(data, listener);
+        }
+    }
+
+    private void dispatchStreamData(StringBuilder data, DifyStreamListener listener) {
+        if (data.length() == 0 || "[DONE]".contentEquals(data)) {
+            return;
+        }
+        try {
+            listener.onEvent(objectMapper.readTree(data.toString()));
+        } catch (IOException e) {
+            logger.warn("Ignored malformed Dify stream event");
+        }
     }
 
     private Credentials chatCredentials(DifyChatApplication application) {
