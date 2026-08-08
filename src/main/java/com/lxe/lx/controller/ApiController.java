@@ -29,7 +29,8 @@ public class ApiController {
     @Login
     @RequestMapping(value = "/test", method = RequestMethod.POST)
     public ResultConstant test(HttpServletRequest request) throws Exception {
-        String response = apiService.sendMessage("介绍一下你自己", "user_123",null);
+        TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+        String response = apiService.sendMessage("介绍一下你自己", tokenEntity.getId(),null);
         System.out.println(response);
         return ResultConstant.success(response);
     }
@@ -91,6 +92,9 @@ public class ApiController {
         if(temp==null){
             return ResultConstant.error("会话id有误");
         }
+        if (!tokenEntity.getId().equals(temp.getStudentId())) {
+            return ResultConstant.notAuthorized();
+        }
         String response = apiService.deleteConversation(conversationId, tokenEntity.getId());
         conversationService.deleteByConversationId(conversationId);
         return ResultConstant.success(response);
@@ -104,6 +108,10 @@ public class ApiController {
                                              @RequestParam(defaultValue = "false") boolean autoGenerate) {
         try {
             TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+            Conversation conversation = conversationService.getConversationByConversationId(conversationId);
+            if (conversation != null && !tokenEntity.getId().equals(conversation.getStudentId())) {
+                return ResultConstant.notAuthorized();
+            }
             String result = apiService.renameConversation(conversationId, tokenEntity.getId(), name, autoGenerate);
             return ResultConstant.success(result);
         } catch (Exception e) {

@@ -77,6 +77,7 @@ public class ConversationController {
         }
         try{
             TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+            conversation.setStudentId(tokenEntity.getId());
             Customer teacherTemp = customerService.getCustomerById(conversation.getTeacherId());
             if(teacherTemp==null){
                 return ResultConstant.error("教师id不存在");
