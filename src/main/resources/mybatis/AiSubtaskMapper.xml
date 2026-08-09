@@ -35,6 +35,10 @@
         SELECT * FROM ai_subtask WHERE id = #{id} AND task_id = #{taskId}
     </select>
 
+    <select id="lockByIdAndTask" resultMap="AiSubtaskMap">
+        SELECT * FROM ai_subtask WHERE id = #{id} AND task_id = #{taskId} FOR UPDATE
+    </select>
+
     <select id="findByTaskId" resultMap="AiSubtaskMap">
         SELECT * FROM ai_subtask WHERE task_id = #{taskId} ORDER BY created_at ASC
     </select>
@@ -53,5 +57,13 @@
             started_at = #{startedAt}, finished_at = #{finishedAt}, updated_at = #{updatedAt},
             version = version + 1
         WHERE id = #{id} AND task_id = #{taskId} AND version = #{version}
+    </update>
+
+    <update id="prepareRetry" parameterType="com.lxe.lx.pojo.AiSubtask">
+        UPDATE ai_subtask
+        SET status = 'RUNNING', execution_no = #{executionNo}, retry_count = #{retryCount},
+            error_code = NULL, error_message = NULL, started_at = #{startedAt},
+            finished_at = NULL, updated_at = #{updatedAt}, version = version + 1
+        WHERE id = #{id} AND task_id = #{taskId} AND status = 'FAILED' AND version = #{version}
     </update>
 </mapper>

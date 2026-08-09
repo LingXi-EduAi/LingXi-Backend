@@ -1,6 +1,7 @@
 package com.lxe.lx.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lxe.lx.domain.AiTaskStatus;
@@ -90,7 +91,36 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
             return;
         }
 
-        ExecutionListener listener = new ExecutionListener(task, subtaskId, context, request);
+        startAgent(task, subtaskId, context, request);
+    }
+
+    @Override
+    public void retrySubtask(String taskId, String subtaskId) {
+        AiTask task = taskMapper.findById(taskId);
+        AiSubtask subtask = subtaskMapper.findByIdAndTask(subtaskId, taskId);
+        if (task == null || subtask == null
+                || !AiTaskStatus.RUNNING.equals(task.getStatus())
+                || !AiTaskStatus.RUNNING.equals(subtask.getStatus())) {
+            return;
+        }
+        AiTaskCreateRequest request = new AiTaskCreateRequest();
+        request.setTaskType(subtask.getAgentType());
+        request.setQuery(subtask.getGoal());
+        try {
+            request.setInputs(objectMapper.readValue(
+                    StringUtils.defaultIfBlank(subtask.getInputsJson(), "{}"),
+                    new TypeReference<Map<String, Object>>() { }));
+        } catch (Exception exception) {
+            fail(taskId, subtaskId, "INVALID_SUBTASK_INPUTS", "子任务输入无法读取", exception);
+            return;
+        }
+        startAgent(task, subtaskId,
+                eventAdapter.createContext(taskId, task.getConversationId()), request);
+    }
+
+    private void startAgent(AiTask task, String subtaskId,
+                            DifyEventAdapter.Context context, AiTaskCreateRequest request) {
+        ExecutionListener listener = new ExecutionListener(task, subtaskId, context);
         try {
             DifyStream stream;
             if ("WORKFLOW".equalsIgnoreCase(request.getTaskType())) {
@@ -103,9 +133,9 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                 stream = difyGateway.streamChatMessage(
                         agentRouter.route(request.getQuery()), chatRequest, task.getUserId(), listener);
             }
-            runtimeRegistry.register(taskId, stream);
-            if (AiTaskStatus.isTerminal(taskMapper.findById(taskId).getStatus())) {
-                runtimeRegistry.remove(taskId);
+            runtimeRegistry.register(task.getId(), stream);
+            if (AiTaskStatus.isTerminal(taskMapper.findById(task.getId()).getStatus())) {
+                runtimeRegistry.remove(task.getId());
             }
         } catch (DifyGatewayException exception) {
             listener.onError(exception);
@@ -118,16 +148,14 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
         private final AiTask task;
         private final String subtaskId;
         private final DifyEventAdapter.Context context;
-        private final AiTaskCreateRequest request;
         private final StringBuilder answer = new StringBuilder();
         private Map<String, Object> outputs = Collections.emptyMap();
 
         private ExecutionListener(AiTask task, String subtaskId,
-                                  DifyEventAdapter.Context context, AiTaskCreateRequest request) {
+                                  DifyEventAdapter.Context context) {
             this.task = task;
             this.subtaskId = subtaskId;
             this.context = context;
-            this.request = request;
         }
 
         @Override

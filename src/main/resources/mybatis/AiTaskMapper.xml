@@ -81,4 +81,12 @@
     <select id="findRunningTasks" resultMap="AiTaskMap">
         SELECT * FROM ai_task WHERE status = 'RUNNING'
     </select>
+
+    <update id="restartForRetry" parameterType="com.lxe.lx.pojo.AiTask">
+        UPDATE ai_task
+        SET status = 'RUNNING', progress = 1, result_json = NULL,
+            error_code = NULL, error_message = NULL, finished_at = NULL,
+            updated_at = #{updatedAt}, version = version + 1
+        WHERE id = #{id} AND status IN ('FAILED', 'PARTIAL_SUCCESS') AND version = #{version}
+    </update>
 </mapper>

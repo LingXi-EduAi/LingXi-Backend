@@ -34,4 +34,6 @@ public interface AiTaskMapper {
     );
 
     List<AiTask> findRunningTasks();
+
+    int restartForRetry(AiTask task);
 }

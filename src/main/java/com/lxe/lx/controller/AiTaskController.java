@@ -9,6 +9,8 @@ import com.lxe.lx.domain.dto.AiTaskCreateResponse;
 import com.lxe.lx.gateway.DifyGatewayException;
 import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.service.AiTaskService;
+import com.lxe.lx.service.AiTaskControlService;
+import com.lxe.lx.domain.dto.AiTaskSnapshot;
 import com.lxe.lx.util.ResultConstant;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -17,6 +19,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,9 +40,51 @@ public class AiTaskController {
     private static final Logger logger = LogManager.getLogger(AiTaskController.class);
 
     private final AiTaskService aiTaskService;
+    private final AiTaskControlService controlService;
 
-    public AiTaskController(AiTaskService aiTaskService) {
+    public AiTaskController(AiTaskService aiTaskService, AiTaskControlService controlService) {
         this.aiTaskService = aiTaskService;
+        this.controlService = controlService;
+    }
+
+    @Login
+    @GetMapping("/tasks/{taskId}")
+    public AiApiResponse<AiTaskSnapshot> getTask(
+            HttpServletRequest request,
+            @PathVariable String taskId) {
+        return AiApiResponse.success(requestId(),
+                controlService.getSnapshot(taskId, currentUserId(request)));
+    }
+
+    @Login
+    @GetMapping("/tasks/{taskId}/events")
+    public SseEmitter subscribeTask(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            @PathVariable String taskId,
+            @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId) {
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("X-Accel-Buffering", "no");
+        return controlService.subscribe(taskId, currentUserId(request), lastEventId);
+    }
+
+    @Login
+    @PostMapping("/tasks/{taskId}/stop")
+    public AiApiResponse<AiTaskSnapshot> stopTask(
+            HttpServletRequest request,
+            @PathVariable String taskId) {
+        return AiApiResponse.success(requestId(),
+                controlService.stop(taskId, currentUserId(request)));
+    }
+
+    @Login
+    @PostMapping("/tasks/{taskId}/subtasks/{subtaskId}/retry")
+    public AiApiResponse<AiTaskSnapshot> retrySubtask(
+            HttpServletRequest request,
+            @PathVariable String taskId,
+            @PathVariable String subtaskId) {
+        return AiApiResponse.success(requestId(),
+                controlService.retry(taskId, subtaskId, currentUserId(request)));
     }
 
     @Login
@@ -45,7 +92,7 @@ public class AiTaskController {
     public ResponseEntity<AiApiResponse<AiTaskCreateResponse>> createTask(
             HttpServletRequest request,
             @RequestBody(required = false) AiTaskCreateRequest taskRequest) {
-        String requestId = UUID.randomUUID().toString().replace("-", "");
+        String requestId = requestId();
         TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
         if (tokenEntity == null || StringUtils.isBlank(tokenEntity.getId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -62,6 +109,18 @@ public class AiTaskController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(AiApiResponse.error(500, "AI 任务创建失败", requestId));
         }
+    }
+
+    private String currentUserId(HttpServletRequest request) {
+        TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+        if (tokenEntity == null || StringUtils.isBlank(tokenEntity.getId())) {
+            throw new com.lxe.lx.service.AiTaskApiException(401, "无法获取当前登录用户");
+        }
+        return tokenEntity.getId();
+    }
+
+    private String requestId() {
+        return UUID.randomUUID().toString().replace("-", "");
     }
 
     @Login
