@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.AiEventMapper">
+    <resultMap id="AiEventMap" type="com.lxe.lx.pojo.AiEvent">
+        <id column="id" property="id"/>
+        <result column="task_id" property="taskId"/>
+        <result column="subtask_id" property="subtaskId"/>
+        <result column="sequence" property="sequence"/>
+        <result column="event_type" property="eventType"/>
+        <result column="status" property="status"/>
+        <result column="payload_version" property="payloadVersion"/>
+        <result column="payload_json" property="payloadJson"/>
+        <result column="source_event_id" property="sourceEventId"/>
+        <result column="occurred_at" property="occurredAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.lxe.lx.pojo.AiEvent">
+        INSERT INTO ai_event
+        (id, task_id, subtask_id, sequence, event_type, status, payload_version,
+         payload_json, source_event_id, occurred_at)
+        VALUES
+        (#{id}, #{taskId}, #{subtaskId}, #{sequence}, #{eventType}, #{status},
+         #{payloadVersion}, CAST(#{payloadJson} AS JSON), #{sourceEventId}, #{occurredAt})
+    </insert>
+
+    <select id="findBySourceEventId" resultMap="AiEventMap">
+        SELECT * FROM ai_event
+        WHERE task_id = #{taskId} AND source_event_id = #{sourceEventId}
+        LIMIT 1
+    </select>
+
+    <select id="findAfterSequence" resultMap="AiEventMap">
+        SELECT * FROM ai_event
+        WHERE task_id = #{taskId} AND sequence &gt; #{sequence}
+        ORDER BY sequence ASC
+    </select>
+</mapper>

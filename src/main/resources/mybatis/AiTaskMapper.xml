@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.AiTaskMapper">
+    <resultMap id="AiTaskMap" type="com.lxe.lx.pojo.AiTask">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="conversation_id" property="conversationId"/>
+        <result column="task_type" property="taskType"/>
+        <result column="status" property="status"/>
+        <result column="progress" property="progress"/>
+        <result column="request_json" property="requestJson"/>
+        <result column="result_json" property="resultJson"/>
+        <result column="error_code" property="errorCode"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="dify_task_id" property="difyTaskId"/>
+        <result column="dify_conversation_id" property="difyConversationId"/>
+        <result column="event_sequence" property="eventSequence"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="started_at" property="startedAt"/>
+        <result column="finished_at" property="finishedAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.lxe.lx.pojo.AiTask">
+        INSERT INTO ai_task
+        (id, user_id, conversation_id, task_type, status, progress, request_json, dify_conversation_id,
+         event_sequence, version, created_at, updated_at)
+        VALUES
+        (#{id}, #{userId}, #{conversationId}, #{taskType}, #{status}, #{progress},
+         CAST(#{requestJson} AS JSON), #{difyConversationId}, 0, 1, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="findById" resultMap="AiTaskMap">
+        SELECT * FROM ai_task WHERE id = #{id}
+    </select>
+
+    <select id="findByIdAndUser" resultMap="AiTaskMap">
+        SELECT * FROM ai_task WHERE id = #{id} AND user_id = #{userId}
+    </select>
+
+    <select id="lockById" resultMap="AiTaskMap">
+        SELECT * FROM ai_task WHERE id = #{id} FOR UPDATE
+    </select>
+
+    <select id="findLatestByConversation" resultMap="AiTaskMap">
+        SELECT * FROM ai_task
+        WHERE user_id = #{userId} AND conversation_id = #{conversationId}
+        ORDER BY created_at DESC LIMIT 1
+    </select>
+
+    <select id="findLatestByConversationId" resultMap="AiTaskMap">
+        SELECT * FROM ai_task
+        WHERE conversation_id = #{conversationId}
+        ORDER BY created_at DESC LIMIT 1
+    </select>
+
+    <update id="updateAfterEvent" parameterType="com.lxe.lx.pojo.AiTask">
+        UPDATE ai_task
+        SET event_sequence = #{eventSequence},
+            status = #{status},
+            progress = #{progress},
+            result_json = <choose><when test="resultJson != null">CAST(#{resultJson} AS JSON)</when><otherwise>result_json</otherwise></choose>,
+            error_code = #{errorCode},
+            error_message = #{errorMessage},
+            started_at = <choose><when test="startedAt != null">#{startedAt}</when><otherwise>started_at</otherwise></choose>,
+            finished_at = <choose><when test="finishedAt != null">#{finishedAt}</when><otherwise>finished_at</otherwise></choose>,
+            updated_at = #{updatedAt},
+            version = version + 1
+        WHERE id = #{id} AND version = #{version}
+    </update>
+
+    <update id="updateDifyIds">
+        UPDATE ai_task
+        SET dify_task_id = COALESCE(#{difyTaskId}, dify_task_id),
+            dify_conversation_id = COALESCE(#{difyConversationId}, dify_conversation_id),
+            updated_at = CURRENT_TIMESTAMP(3)
+        WHERE id = #{id}
+    </update>
+
+    <select id="findRunningTasks" resultMap="AiTaskMap">
+        SELECT * FROM ai_task WHERE status = 'RUNNING'
+    </select>
+</mapper>

@@ -133,15 +133,51 @@ public class DifyGatewayImpl implements DifyGateway {
         body.put("files", request.getFiles() == null ? Collections.emptyList() : request.getFiles());
         body.put("auto_generate_name", request.isAutoGenerateName());
 
+        return startStream(credentials, "/chat-messages", body, "Chatflow", listener);
+    }
+
+    @Override
+    public DifyStream streamWorkflow(
+            Map<String, Object> inputs,
+            String userId,
+            DifyStreamListener listener) {
+        requireUser(userId);
+        if (listener == null) {
+            throw invalid("流式事件监听器不能为空");
+        }
+        workflowCredentials.validate();
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("inputs", inputs == null ? Collections.emptyMap() : inputs);
+        body.put("response_mode", "streaming");
+        body.put("user", userId);
+        return startStream(workflowCredentials, "/workflows/run", body, "Workflow", listener);
+    }
+
+    @Override
+    public void stopChatMessage(DifyChatApplication application, String difyTaskId, String userId) {
+        stopTask(chatCredentials(application), "/chat-messages/", difyTaskId, userId, "Chatflow");
+    }
+
+    @Override
+    public void stopWorkflow(String difyTaskId, String userId) {
+        stopTask(workflowCredentials, "/workflows/tasks/", difyTaskId, userId, "Workflow");
+    }
+
+    private DifyStream startStream(
+            Credentials credentials,
+            String path,
+            Map<String, Object> body,
+            String operation,
+            DifyStreamListener listener) {
         final String requestJson;
         try {
             requestJson = objectMapper.writeValueAsString(body);
         } catch (IOException e) {
-            throw new DifyGatewayException("序列化 Chatflow 流式请求失败", null, false, e);
+            throw new DifyGatewayException("序列化 " + operation + " 流式请求失败", null, false, e);
         }
 
         Request httpRequest = new Request.Builder()
-                .url(uri(credentials, "/chat-messages").build().encode().toUriString())
+                .url(uri(credentials, path).build().encode().toUriString())
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + credentials.apiKey)
                 .header(HttpHeaders.ACCEPT, MediaType.TEXT_EVENT_STREAM_VALUE)
                 .post(RequestBody.create(JSON_MEDIA_TYPE, requestJson))
@@ -152,7 +188,7 @@ public class DifyGatewayImpl implements DifyGateway {
             public void onFailure(Call failedCall, IOException exception) {
                 if (!failedCall.isCanceled()) {
                     listener.onError(new DifyGatewayException(
-                            "无法连接 Dify 服务：Chatflow 流式调用",
+                            "无法连接 Dify 服务：" + operation + " 流式调用",
                             null,
                             true,
                             exception
@@ -166,7 +202,7 @@ public class DifyGatewayImpl implements DifyGateway {
                     if (!response.isSuccessful()) {
                         String responseText = response.body() == null ? "" : response.body().string();
                         listener.onError(new DifyGatewayException(
-                                "Chatflow 流式调用失败：" + extractErrorDetail(responseText, response.message()),
+                                operation + " 流式调用失败：" + extractErrorDetail(responseText, response.message()),
                                 response.code(),
                                 response.code() == 429 || response.code() >= 500,
                                 null
@@ -176,7 +212,7 @@ public class DifyGatewayImpl implements DifyGateway {
                     ResponseBody responseBody = response.body();
                     if (responseBody == null) {
                         listener.onError(new DifyGatewayException(
-                                "Chatflow 流式调用返回空响应",
+                                operation + " 流式调用返回空响应",
                                 response.code(),
                                 false,
                                 null
@@ -211,6 +247,24 @@ public class DifyGatewayImpl implements DifyGateway {
             }
         });
         return call::cancel;
+    }
+
+    private void stopTask(
+            Credentials credentials,
+            String pathPrefix,
+            String difyTaskId,
+            String userId,
+            String operation) {
+        requireUser(userId);
+        requireText(difyTaskId, "Dify taskId 不能为空");
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("user", userId);
+        exchangeJson(
+                operation + " 停止",
+                uri(credentials, pathPrefix).pathSegment(difyTaskId, "stop").build().encode().toUri(),
+                HttpMethod.POST,
+                jsonEntity(credentials, body)
+        );
     }
 
     @Override

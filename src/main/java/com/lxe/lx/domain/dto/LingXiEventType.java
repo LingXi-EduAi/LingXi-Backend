@@ -10,6 +10,7 @@ public final class LingXiEventType {
     public static final String ANSWER_DELTA = "answer_delta";
     public static final String TASK_FINISHED = "task_finished";
     public static final String TASK_ERROR = "task_error";
+    public static final String EXECUTION_INTERRUPTED = "execution_interrupted";
 
     private LingXiEventType() {
     }

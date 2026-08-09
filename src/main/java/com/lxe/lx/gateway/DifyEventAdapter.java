@@ -47,6 +47,9 @@ public class DifyEventAdapter {
         if ("message_end".equals(sourceEvent)) {
             return taskFinished(context, source);
         }
+        if ("workflow_finished".equals(sourceEvent)) {
+            return workflowFinished(context, source);
+        }
         if ("error".equals(sourceEvent)) {
             return taskError(context, source);
         }
@@ -127,6 +130,28 @@ public class DifyEventAdapter {
         );
     }
 
+    private LingXiEvent workflowFinished(Context context, JsonNode source) {
+        if (!context.terminal.compareAndSet(false, true)) {
+            return null;
+        }
+        JsonNode data = source.path("data");
+        String workflowStatus = data.path("status").asText();
+        boolean succeeded = StringUtils.isBlank(workflowStatus) || "succeeded".equalsIgnoreCase(workflowStatus);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        putText(payload, "difyTaskId", source.path("task_id"));
+        if (data.has("outputs") && !data.path("outputs").isNull()) {
+            payload.put("outputs", objectMapper.convertValue(data.path("outputs"), Object.class));
+        }
+        payload.put("finishReason", "workflow_finished");
+        if (!succeeded) {
+            payload.put("code", "DIFY_WORKFLOW_FAILED");
+            payload.put("message", StringUtils.defaultIfBlank(data.path("error").asText(), "Workflow 执行失败"));
+            payload.put("retryable", false);
+            return event(context, LingXiEventType.TASK_ERROR, "FAILED", payload);
+        }
+        return event(context, LingXiEventType.TASK_FINISHED, "SUCCEEDED", payload);
+    }
+
     private LingXiEvent event(
             Context context,
             String eventType,
@@ -167,6 +192,10 @@ public class DifyEventAdapter {
         private Context(String taskId, String conversationId) {
             this.taskId = taskId;
             this.conversationId = conversationId;
+        }
+
+        public String taskId() {
+            return taskId;
         }
     }
 }

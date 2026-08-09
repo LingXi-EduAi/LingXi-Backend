@@ -19,6 +19,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.util.LinkedHashMap;
 import java.util.Objects;
+import java.util.Map;
+import java.util.UUID;
 
 //@Component
 //public class AuthorizationInterceptor implements HandlerInterceptor {
@@ -136,14 +138,14 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
         }
 
         if (StringUtils.isBlank(token)) {
-            return sendErrorResponse(response, "参数缺少 token 值");
+            return sendErrorResponse(request, response, "参数缺少 token 值");
         }
 
         // 🚀 使用 Redis 查询 TokenEntity
 //        TokenEntity tokenEntity = redisTemplate.opsForValue().get("token:" + token);
         Object obj = redisTemplate.opsForValue().get("token:" + token);
         if (obj == null) {
-            return sendErrorResponse(response, "登录过期，请重新登录");
+            return sendErrorResponse(request, response, "登录过期，请重新登录");
         }
         TokenEntity tokenEntity = new TokenEntity();
         if (obj instanceof LinkedHashMap) {
@@ -152,11 +154,11 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
         } else if (obj instanceof TokenEntity) {
             tokenEntity = (TokenEntity) obj;
         }else {
-            return sendErrorResponse(response, "登录状态异常，请重新登录");
+            return sendErrorResponse(request, response, "登录状态异常，请重新登录");
         }
 
         if (isTokenEntityInvalid(tokenEntity)) {
-            return sendErrorResponse(response, "登录过期，请重新登录");
+            return sendErrorResponse(request, response, "登录过期，请重新登录");
         }
 
         if (teacherOnly != null && !TokenEntity.ROLE_TEACHER.equals(tokenEntity.getRole())) {
@@ -167,12 +169,21 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    private boolean sendErrorResponse(HttpServletResponse response, String message) throws Exception {
+    private boolean sendErrorResponse(HttpServletRequest request, HttpServletResponse response, String message) throws Exception {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=utf-8");
         PrintWriter out = response.getWriter();
-        out.write(JSON.toJSONString(ResultConstant.init(ResultConstant.TOKEN_INVALID, message, null)));
+        if (request.getRequestURI().startsWith("/api/ai/tasks")) {
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+            body.put("msg", message);
+            body.put("requestId", UUID.randomUUID().toString().replace("-", ""));
+            body.put("data", null);
+            out.write(JSON.toJSONString(body));
+        } else {
+            out.write(JSON.toJSONString(ResultConstant.init(ResultConstant.TOKEN_INVALID, message, null)));
+        }
         out.flush();
         out.close();
         return false;

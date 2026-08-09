@@ -3,6 +3,9 @@ package com.lxe.lx.controller;
 import com.lxe.lx.annotation.Login;
 import com.lxe.lx.domain.dto.AiTaskRequest;
 import com.lxe.lx.domain.dto.AiTaskResponse;
+import com.lxe.lx.domain.dto.AiApiResponse;
+import com.lxe.lx.domain.dto.AiTaskCreateRequest;
+import com.lxe.lx.domain.dto.AiTaskCreateResponse;
 import com.lxe.lx.gateway.DifyGatewayException;
 import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.service.AiTaskService;
@@ -14,7 +17,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -33,6 +38,30 @@ public class AiTaskController {
 
     public AiTaskController(AiTaskService aiTaskService) {
         this.aiTaskService = aiTaskService;
+    }
+
+    @Login
+    @PostMapping("/tasks")
+    public ResponseEntity<AiApiResponse<AiTaskCreateResponse>> createTask(
+            HttpServletRequest request,
+            @RequestBody(required = false) AiTaskCreateRequest taskRequest) {
+        String requestId = UUID.randomUUID().toString().replace("-", "");
+        TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
+        if (tokenEntity == null || StringUtils.isBlank(tokenEntity.getId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AiApiResponse.error(401, "无法获取当前登录用户", requestId));
+        }
+        try {
+            return ResponseEntity.ok(AiApiResponse.success(requestId,
+                    aiTaskService.createTask(taskRequest, tokenEntity.getId())));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest()
+                    .body(AiApiResponse.error(400, exception.getMessage(), requestId));
+        } catch (Exception exception) {
+            logger.error("Persistent AI task creation failed, requestId={}", requestId, exception);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(AiApiResponse.error(500, "AI 任务创建失败", requestId));
+        }
     }
 
     @Login

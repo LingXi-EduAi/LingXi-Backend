@@ -16,6 +16,16 @@ public interface DifyGateway {
             DifyStreamListener listener
     );
 
+    DifyStream streamWorkflow(
+            Map<String, Object> inputs,
+            String userId,
+            DifyStreamListener listener
+    );
+
+    void stopChatMessage(DifyChatApplication application, String difyTaskId, String userId);
+
+    void stopWorkflow(String difyTaskId, String userId);
+
     JsonNode getMessages(
             DifyChatApplication application,
             String conversationId,

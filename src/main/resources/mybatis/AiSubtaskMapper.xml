@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.AiSubtaskMapper">
+    <resultMap id="AiSubtaskMap" type="com.lxe.lx.pojo.AiSubtask">
+        <id column="id" property="id"/>
+        <result column="task_id" property="taskId"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="agent_type" property="agentType"/>
+        <result column="goal" property="goal"/>
+        <result column="inputs_json" property="inputsJson"/>
+        <result column="dependency_json" property="dependencyJson"/>
+        <result column="status" property="status"/>
+        <result column="execution_no" property="executionNo"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="error_code" property="errorCode"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="started_at" property="startedAt"/>
+        <result column="finished_at" property="finishedAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.lxe.lx.pojo.AiSubtask">
+        INSERT INTO ai_subtask
+        (id, task_id, parent_id, agent_type, goal, inputs_json, dependency_json,
+         status, execution_no, retry_count, version, created_at, updated_at)
+        VALUES
+        (#{id}, #{taskId}, #{parentId}, #{agentType}, #{goal},
+         CAST(#{inputsJson} AS JSON), CAST(#{dependencyJson} AS JSON), #{status},
+         #{executionNo}, #{retryCount}, 1, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="findByIdAndTask" resultMap="AiSubtaskMap">
+        SELECT * FROM ai_subtask WHERE id = #{id} AND task_id = #{taskId}
+    </select>
+
+    <select id="findByTaskId" resultMap="AiSubtaskMap">
+        SELECT * FROM ai_subtask WHERE task_id = #{taskId} ORDER BY created_at ASC
+    </select>
+
+    <update id="updateAssignment" parameterType="com.lxe.lx.pojo.AiSubtask">
+        UPDATE ai_subtask
+        SET agent_type = #{agentType}, goal = #{goal}, inputs_json = CAST(#{inputsJson} AS JSON),
+            status = #{status}, updated_at = #{updatedAt}, version = version + 1
+        WHERE id = #{id} AND task_id = #{taskId} AND version = #{version}
+    </update>
+
+    <update id="updateStatus" parameterType="com.lxe.lx.pojo.AiSubtask">
+        UPDATE ai_subtask
+        SET status = #{status}, execution_no = #{executionNo}, retry_count = #{retryCount},
+            error_code = #{errorCode}, error_message = #{errorMessage},
+            started_at = #{startedAt}, finished_at = #{finishedAt}, updated_at = #{updatedAt},
+            version = version + 1
+        WHERE id = #{id} AND task_id = #{taskId} AND version = #{version}
+    </update>
+</mapper>
