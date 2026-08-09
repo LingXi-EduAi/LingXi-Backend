@@ -1,5 +1,6 @@
 package com.lxe.lx.config;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lxe.lx.annotation.Login;
 import com.lxe.lx.annotation.TeacherOnly;
@@ -180,7 +181,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             body.put("msg", message);
             body.put("requestId", UUID.randomUUID().toString().replace("-", ""));
             body.put("data", null);
-            out.write(JSON.toJSONString(body));
+            out.write(JSON.toJSONString(body, SerializerFeature.WriteMapNullValue));
         } else {
             out.write(JSON.toJSONString(ResultConstant.init(ResultConstant.TOKEN_INVALID, message, null)));
         }
