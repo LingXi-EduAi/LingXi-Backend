@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.AiEvidenceMapper">
+    <resultMap id="AiEvidenceMap" type="com.lxe.lx.pojo.AiEvidence">
+        <id column="id" property="id"/>
+        <result column="message_id" property="messageId"/>
+        <result column="source_type" property="sourceType"/>
+        <result column="title" property="title"/>
+        <result column="url" property="url"/>
+        <result column="content_snippet" property="contentSnippet"/>
+        <result column="score" property="score"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.lxe.lx.pojo.AiEvidence">
+        INSERT INTO ai_evidence
+        (id, message_id, source_type, title, url, content_snippet, score, created_at)
+        VALUES
+        (#{id}, #{messageId}, #{sourceType}, #{title}, #{url}, #{contentSnippet}, #{score}, #{createdAt})
+    </insert>
+
+    <select id="findByMessageId" resultMap="AiEvidenceMap">
+        SELECT * FROM ai_evidence
+        WHERE message_id = #{messageId}
+        ORDER BY score DESC, created_at ASC, id ASC
+    </select>
+</mapper>
