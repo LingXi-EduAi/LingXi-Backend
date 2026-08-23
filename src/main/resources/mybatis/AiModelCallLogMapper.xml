@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.AiModelCallLogMapper">
+    <resultMap id="AiModelCallLogMap" type="com.lxe.lx.pojo.AiModelCallLog">
+        <id column="id" property="id"/>
+        <result column="task_id" property="taskId"/>
+        <result column="user_id" property="userId"/>
+        <result column="node_name" property="nodeName"/>
+        <result column="model" property="model"/>
+        <result column="total_tokens" property="totalTokens"/>
+        <result column="latency_ms" property="latencyMs"/>
+        <result column="cost" property="cost"/>
+        <result column="error_code" property="errorCode"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.lxe.lx.pojo.AiModelCallLog">
+        INSERT INTO ai_model_call_log
+        (id, task_id, node_name, model, total_tokens, latency_ms, cost, error_code, created_at)
+        VALUES
+        (#{id}, #{taskId}, #{nodeName}, #{model}, #{totalTokens}, #{latencyMs}, #{cost}, #{errorCode}, #{createdAt})
+    </insert>
+
+    <select id="findByTaskId" resultMap="AiModelCallLogMap">
+        SELECT l.*, t.user_id
+        FROM ai_model_call_log l
+        INNER JOIN ai_task t ON t.id = l.task_id
+        WHERE l.task_id = #{taskId} AND t.user_id = #{userId}
+        ORDER BY l.created_at ASC, l.id ASC
+    </select>
+
+    <sql id="queryWhere">
+        WHERE t.user_id = #{userId}
+        <if test="taskId != null and taskId != ''">AND l.task_id = #{taskId}</if>
+        <if test="nodeName != null and nodeName != ''">AND l.node_name = #{nodeName}</if>
+        <if test="startAt != null">AND l.created_at &gt;= #{startAt}</if>
+        <if test="endAt != null">AND l.created_at &lt;= #{endAt}</if>
+    </sql>
+
+    <select id="findByQuery" resultMap="AiModelCallLogMap">
+        SELECT l.*, t.user_id
+        FROM ai_model_call_log l
+        INNER JOIN ai_task t ON t.id = l.task_id
+        <include refid="queryWhere"/>
+        ORDER BY l.created_at DESC, l.id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="findAllByQuery" resultMap="AiModelCallLogMap">
+        SELECT l.*, t.user_id
+        FROM ai_model_call_log l
+        INNER JOIN ai_task t ON t.id = l.task_id
+        <include refid="queryWhere"/>
+        ORDER BY l.created_at DESC, l.id DESC
+    </select>
+
+    <select id="countByQuery" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM ai_model_call_log l
+        INNER JOIN ai_task t ON t.id = l.task_id
+        <include refid="queryWhere"/>
+    </select>
+</mapper>
