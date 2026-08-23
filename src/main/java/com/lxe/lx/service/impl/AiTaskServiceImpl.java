@@ -20,6 +20,7 @@ import com.lxe.lx.mapper.AiTaskMapper;
 import com.lxe.lx.pojo.AiSubtask;
 import com.lxe.lx.pojo.AiTask;
 import com.lxe.lx.service.AiTaskExecutionService;
+import com.lxe.lx.service.AiMessageService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.TaskExecutor;
@@ -49,6 +50,7 @@ public class AiTaskServiceImpl implements AiTaskService {
     private final AiTaskExecutionService executionService;
     private final TaskExecutor taskExecutor;
     private final ObjectMapper objectMapper;
+    private final AiMessageService messageService;
 
     public AiTaskServiceImpl(
             DifyGateway difyGateway,
@@ -60,6 +62,7 @@ public class AiTaskServiceImpl implements AiTaskService {
             AiTaskExecutionService executionService,
             @Qualifier("aiTaskExecutor") TaskExecutor taskExecutor,
             ObjectMapper objectMapper,
+            AiMessageService messageService,
             @Value("${ai.sse.timeout-ms:600000}") long sseTimeoutMs,
             @Value("${ai.sse.heartbeat-ms:15000}") long heartbeatMs) {
         this.difyGateway = difyGateway;
@@ -73,6 +76,7 @@ public class AiTaskServiceImpl implements AiTaskService {
         this.executionService = executionService;
         this.taskExecutor = taskExecutor;
         this.objectMapper = objectMapper;
+        this.messageService = messageService;
     }
 
     @Override
@@ -210,6 +214,11 @@ public class AiTaskServiceImpl implements AiTaskService {
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(task.getCreatedAt());
         aiTaskMapper.insert(task);
+        if ("CHATFLOW".equals(taskType) && StringUtils.isNotBlank(request.getQuery())) {
+            messageService.saveUserQuestion(conversationId, task.getId(), request.getQuery());
+        } else if ("WORKFLOW".equals(taskType) && StringUtils.isNotBlank(request.getQuery())) {
+            messageService.saveUserQuestion(conversationId, task.getId(), request.getQuery());
+        }
 
         AiSubtask subtask = new AiSubtask();
         subtask.setId(uuid());

@@ -19,18 +19,25 @@ import com.lxe.lx.gateway.DifyStreamListener;
 import com.lxe.lx.mapper.AiSubtaskMapper;
 import com.lxe.lx.mapper.AiTaskMapper;
 import com.lxe.lx.pojo.AiSubtask;
+import com.lxe.lx.pojo.AiEvidence;
 import com.lxe.lx.pojo.AiTask;
 import com.lxe.lx.service.AiEventService;
 import com.lxe.lx.service.AiRuntimeRegistry;
 import com.lxe.lx.service.AiTaskExecutionService;
+import com.lxe.lx.service.AiTaskResultPersistenceService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 @Service
 public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
@@ -42,6 +49,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
     private final DifyEventAdapter eventAdapter;
     private final AiRuntimeRegistry runtimeRegistry;
     private final ObjectMapper objectMapper;
+    private final AiTaskResultPersistenceService resultPersistenceService;
 
     public AiTaskExecutionServiceImpl(
             AiTaskMapper taskMapper,
@@ -51,7 +59,8 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
             AiAgentRouter agentRouter,
             DifyEventAdapter eventAdapter,
             AiRuntimeRegistry runtimeRegistry,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            AiTaskResultPersistenceService resultPersistenceService) {
         this.taskMapper = taskMapper;
         this.subtaskMapper = subtaskMapper;
         this.eventService = eventService;
@@ -60,6 +69,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
         this.eventAdapter = eventAdapter;
         this.runtimeRegistry = runtimeRegistry;
         this.objectMapper = objectMapper;
+        this.resultPersistenceService = resultPersistenceService;
     }
 
     @Override
@@ -150,6 +160,8 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
         private final DifyEventAdapter.Context context;
         private final StringBuilder answer = new StringBuilder();
         private Map<String, Object> outputs = Collections.emptyMap();
+        private final List<AiEvidence> evidences = new ArrayList<>();
+        private final Set<String> evidenceKeys = new HashSet<>();
 
         private ExecutionListener(AiTask task, String subtaskId,
                                   DifyEventAdapter.Context context) {
@@ -165,6 +177,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
             if (outputNode.isObject()) {
                 outputs = objectMapper.convertValue(outputNode, Map.class);
             }
+            collectEvidence(sourceEvent);
             if (sourceEvent.has("answer")) {
                 answer.append(sourceEvent.path("answer").asText());
             }
@@ -173,8 +186,16 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                 String resultJson = isFinished(event) ? resultJson() : null;
                 String errorCode = isError(event) ? text(event.getPayload(), "code") : null;
                 String errorMessage = isError(event) ? text(event.getPayload(), "message") : null;
-                record(subtaskId, task.getId(), event, sourceId(sourceEvent),
-                        resultJson, errorCode, errorMessage);
+                if (isFinished(event) || isError(event)) {
+                    resultPersistenceService.recordTerminalEvent(
+                            task.getId(), subtaskId, event, sourceId(sourceEvent),
+                            resultJson, errorCode, errorMessage,
+                            isError(event) ? null : answerText(sourceEvent),
+                            firstText(sourceEvent, "message_id"), evidences);
+                } else {
+                    record(subtaskId, task.getId(), event, sourceId(sourceEvent),
+                            resultJson, errorCode, errorMessage);
+                }
                 if (isFinished(event) || isError(event)) {
                     runtimeRegistry.remove(task.getId());
                 }
@@ -185,7 +206,9 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
         public void onComplete() {
             LingXiEvent event = eventAdapter.streamCompleted(context);
             if (event != null) {
-                record(subtaskId, task.getId(), event, "lingxi:stream_completed", resultJson(), null, null);
+                resultPersistenceService.recordTerminalEvent(
+                        task.getId(), subtaskId, event, "lingxi:stream_completed",
+                        resultJson(), null, null, answer.toString(), null, evidences);
             }
             runtimeRegistry.remove(task.getId());
         }
@@ -218,6 +241,71 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                 result.put("outputs", outputs);
             }
             return writeJson(result);
+        }
+
+        private String answerText(JsonNode sourceEvent) {
+            if (answer.length() > 0) {
+                return answer.toString();
+            }
+            JsonNode outputsNode = sourceEvent.path("data").path("outputs");
+            if (!outputsNode.isObject()) {
+                return null;
+            }
+            for (String field : new String[]{"answer", "result", "text", "content"}) {
+                JsonNode value = outputsNode.get(field);
+                if (value != null && value.isValueNode() && StringUtils.isNotBlank(value.asText())) {
+                    return value.asText();
+                }
+            }
+            return null;
+        }
+
+        private void collectEvidence(JsonNode sourceEvent) {
+            JsonNode resources = sourceEvent.path("metadata").path("retriever_resources");
+            if (!resources.isArray()) {
+                resources = sourceEvent.path("data").path("retriever_resources");
+            }
+            if (!resources.isArray()) {
+                resources = sourceEvent.path("data").path("retrieval_resources");
+            }
+            if (!resources.isArray()) {
+                return;
+            }
+            for (JsonNode resource : resources) {
+                AiEvidence evidence = evidence(resource);
+                if (evidence == null) {
+                    continue;
+                }
+                String key = String.valueOf(evidence.getSourceType()) + "|"
+                        + String.valueOf(evidence.getTitle()) + "|"
+                        + String.valueOf(evidence.getUrl()) + "|"
+                        + String.valueOf(evidence.getContentSnippet());
+                if (evidenceKeys.add(key)) {
+                    evidences.add(evidence);
+                }
+            }
+        }
+
+        private AiEvidence evidence(JsonNode resource) {
+            String snippet = firstText(resource, "content", "content_snippet", "snippet");
+            String title = firstText(resource, "document_name", "title", "name");
+            String url = firstText(resource, "url", "link");
+            String sourceType = firstText(resource, "data_source_type", "source_type", "type");
+            JsonNode scoreNode = resource.get("score");
+            if (StringUtils.isBlank(snippet) && StringUtils.isBlank(title)
+                    && StringUtils.isBlank(url) && scoreNode == null) {
+                return null;
+            }
+            AiEvidence evidence = new AiEvidence();
+            evidence.setId(UUID.randomUUID().toString().replace("-", ""));
+            evidence.setSourceType(StringUtils.defaultIfBlank(sourceType, "KNOWLEDGE_BASE"));
+            evidence.setTitle(title);
+            evidence.setUrl(url);
+            evidence.setContentSnippet(snippet);
+            if (scoreNode != null && scoreNode.isNumber()) {
+                evidence.setScore(new BigDecimal(scoreNode.asText()));
+            }
+            return evidence;
         }
     }
 
