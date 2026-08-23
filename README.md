@@ -427,9 +427,10 @@ token: <登录Token>
 
 ## 相关文档
 
-- `后端部署方案.md`
-- `dify连接测试.md`
-- `更新总结.md`
+- [完整文档索引](docs/README.md)
+- [后端部署方案](docs/部署与联调/后端部署方案.md)
+- [Dify 连接测试](docs/部署与联调/dify连接测试.md)
+- [更新总结](docs/交接与记录/更新总结.md)
 - `.env.example`
 
 ## 安全说明
