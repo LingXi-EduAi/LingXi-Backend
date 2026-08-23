@@ -25,6 +25,8 @@ import com.lxe.lx.service.AiEventService;
 import com.lxe.lx.service.AiRuntimeRegistry;
 import com.lxe.lx.service.AiTaskExecutionService;
 import com.lxe.lx.service.AiTaskResultPersistenceService;
+import com.lxe.lx.service.AiModelCallLogService;
+import com.lxe.lx.pojo.AiModelCallLog;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -50,6 +52,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
     private final AiRuntimeRegistry runtimeRegistry;
     private final ObjectMapper objectMapper;
     private final AiTaskResultPersistenceService resultPersistenceService;
+    private final AiModelCallLogService modelCallLogService;
 
     public AiTaskExecutionServiceImpl(
             AiTaskMapper taskMapper,
@@ -60,7 +63,8 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
             DifyEventAdapter eventAdapter,
             AiRuntimeRegistry runtimeRegistry,
             ObjectMapper objectMapper,
-            AiTaskResultPersistenceService resultPersistenceService) {
+            AiTaskResultPersistenceService resultPersistenceService,
+            AiModelCallLogService modelCallLogService) {
         this.taskMapper = taskMapper;
         this.subtaskMapper = subtaskMapper;
         this.eventService = eventService;
@@ -70,6 +74,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
         this.runtimeRegistry = runtimeRegistry;
         this.objectMapper = objectMapper;
         this.resultPersistenceService = resultPersistenceService;
+        this.modelCallLogService = modelCallLogService;
     }
 
     @Override
@@ -162,6 +167,8 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
         private Map<String, Object> outputs = Collections.emptyMap();
         private final List<AiEvidence> evidences = new ArrayList<>();
         private final Set<String> evidenceKeys = new HashSet<>();
+        private final long startedAtMs = System.currentTimeMillis();
+        private boolean modelCallLogged;
 
         private ExecutionListener(AiTask task, String subtaskId,
                                   DifyEventAdapter.Context context) {
@@ -187,6 +194,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                 String errorCode = isError(event) ? text(event.getPayload(), "code") : null;
                 String errorMessage = isError(event) ? text(event.getPayload(), "message") : null;
                 if (isFinished(event) || isError(event)) {
+                    recordModelCall(sourceEvent, isError(event) ? errorCode : null);
                     resultPersistenceService.recordTerminalEvent(
                             task.getId(), subtaskId, event, sourceId(sourceEvent),
                             resultJson, errorCode, errorMessage,
@@ -210,6 +218,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                         task.getId(), subtaskId, event, "lingxi:stream_completed",
                         resultJson(), null, null, answer.toString(), null, evidences);
             }
+            recordModelCall(null, null);
             runtimeRegistry.remove(task.getId());
         }
 
@@ -221,6 +230,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                 record(subtaskId, task.getId(), event, "lingxi:stream_error:" + UUID.randomUUID(),
                         null, "DIFY_STREAM_ERROR", exception.getMessage());
             }
+            recordModelCall(null, "DIFY_STREAM_ERROR");
             runtimeRegistry.remove(task.getId());
         }
 
@@ -241,6 +251,58 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                 result.put("outputs", outputs);
             }
             return writeJson(result);
+        }
+
+        private void recordModelCall(JsonNode sourceEvent, String errorCode) {
+            if (modelCallLogged) {
+                return;
+            }
+            modelCallLogged = true;
+            AiModelCallLog log = new AiModelCallLog();
+            log.setId(UUID.randomUUID().toString().replace("-", ""));
+            log.setTaskId(task.getId());
+            log.setUserId(task.getUserId());
+            log.setNodeName(task.getTaskType());
+            log.setModel(task.getTaskType());
+            log.setLatencyMs(Math.max(0L, System.currentTimeMillis() - startedAtMs));
+            log.setTotalTokens(totalTokens(sourceEvent));
+            log.setCost(cost(sourceEvent));
+            log.setErrorCode(errorCode);
+            log.setCreatedAt(LocalDateTime.now());
+            modelCallLogService.recordAsync(log);
+        }
+
+        private Long totalTokens(JsonNode sourceEvent) {
+            if (sourceEvent == null) {
+                return null;
+            }
+            JsonNode usage = sourceEvent.path("metadata").path("usage");
+            JsonNode value = usage.path("total_tokens");
+            if (!value.isNumber()) {
+                value = sourceEvent.path("data").path("total_tokens");
+            }
+            return value.isNumber() ? value.asLong() : null;
+        }
+
+        private BigDecimal cost(JsonNode sourceEvent) {
+            if (sourceEvent == null) {
+                return null;
+            }
+            JsonNode usage = sourceEvent.path("metadata").path("usage");
+            for (String field : new String[]{"total_price", "total_cost", "cost"}) {
+                JsonNode value = usage.get(field);
+                if (value != null && value.isNumber()) {
+                    return new BigDecimal(value.asText());
+                }
+            }
+            JsonNode data = sourceEvent.path("data");
+            for (String field : new String[]{"total_price", "total_cost", "cost"}) {
+                JsonNode value = data.get(field);
+                if (value != null && value.isNumber()) {
+                    return new BigDecimal(value.asText());
+                }
+            }
+            return null;
         }
 
         private String answerText(JsonNode sourceEvent) {

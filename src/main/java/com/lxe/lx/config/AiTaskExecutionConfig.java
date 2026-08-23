@@ -23,4 +23,19 @@ public class AiTaskExecutionConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean("aiModelCallLogExecutor")
+    public TaskExecutor aiModelCallLogExecutor(
+            @Value("${ai.model-log.executor.core-size:1}") int coreSize,
+            @Value("${ai.model-log.executor.max-size:2}") int maxSize,
+            @Value("${ai.model-log.executor.queue-capacity:200}") int queueCapacity) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(coreSize);
+        executor.setMaxPoolSize(maxSize);
+        executor.setQueueCapacity(queueCapacity);
+        executor.setThreadNamePrefix("ai-model-log-");
+        executor.setWaitForTasksToCompleteOnShutdown(false);
+        executor.initialize();
+        return executor;
+    }
 }
