@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.UUID;
 
-@RestControllerAdvice(assignableTypes = AiTaskController.class)
+@RestControllerAdvice(assignableTypes = {AiTaskController.class, AiConversationController.class})
 public class AiTaskExceptionHandler {
 
     @ExceptionHandler(AiTaskApiException.class)

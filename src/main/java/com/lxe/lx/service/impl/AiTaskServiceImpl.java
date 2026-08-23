@@ -21,6 +21,7 @@ import com.lxe.lx.pojo.AiSubtask;
 import com.lxe.lx.pojo.AiTask;
 import com.lxe.lx.service.AiTaskExecutionService;
 import com.lxe.lx.service.AiMessageService;
+import com.lxe.lx.service.AiConversationService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.TaskExecutor;
@@ -51,6 +52,7 @@ public class AiTaskServiceImpl implements AiTaskService {
     private final TaskExecutor taskExecutor;
     private final ObjectMapper objectMapper;
     private final AiMessageService messageService;
+    private final AiConversationService conversationService;
 
     public AiTaskServiceImpl(
             DifyGateway difyGateway,
@@ -63,6 +65,7 @@ public class AiTaskServiceImpl implements AiTaskService {
             @Qualifier("aiTaskExecutor") TaskExecutor taskExecutor,
             ObjectMapper objectMapper,
             AiMessageService messageService,
+            AiConversationService conversationService,
             @Value("${ai.sse.timeout-ms:600000}") long sseTimeoutMs,
             @Value("${ai.sse.heartbeat-ms:15000}") long heartbeatMs) {
         this.difyGateway = difyGateway;
@@ -77,6 +80,7 @@ public class AiTaskServiceImpl implements AiTaskService {
         this.taskExecutor = taskExecutor;
         this.objectMapper = objectMapper;
         this.messageService = messageService;
+        this.conversationService = conversationService;
     }
 
     @Override
@@ -200,6 +204,8 @@ public class AiTaskServiceImpl implements AiTaskService {
             difyConversationId = conversation.getDifyConversationId();
         }
         request.setTaskType(taskType);
+        conversationService.createIfAbsent(conversationId, userId,
+                StringUtils.defaultIfBlank(request.getQuery(), "Workflow 会话"));
         AiTask task = new AiTask();
         task.setId(uuid());
         task.setUserId(userId);

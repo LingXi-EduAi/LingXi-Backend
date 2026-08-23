@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.AiConversationMapper">
+    <resultMap id="AiConversationMap" type="com.lxe.lx.pojo.AiConversation">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="title" property="title"/>
+        <result column="state" property="state"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="deleted_at" property="deletedAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.lxe.lx.pojo.AiConversation">
+        INSERT INTO ai_conversation
+        (id, user_id, title, state, version, created_at, updated_at, deleted_at)
+        VALUES
+        (#{id}, #{userId}, #{title}, #{state}, #{version}, #{createdAt}, #{updatedAt}, #{deletedAt})
+    </insert>
+
+    <select id="findByIdAndUser" resultMap="AiConversationMap">
+        SELECT * FROM ai_conversation WHERE id = #{id} AND user_id = #{userId}
+    </select>
+
+    <select id="findByUser" resultMap="AiConversationMap">
+        SELECT * FROM ai_conversation
+        WHERE user_id = #{userId} AND state = #{state}
+        ORDER BY updated_at DESC, id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countByUser" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM ai_conversation
+        WHERE user_id = #{userId} AND state = #{state}
+    </select>
+
+    <update id="updateTitle" parameterType="com.lxe.lx.pojo.AiConversation">
+        UPDATE ai_conversation
+        SET title = #{title}, updated_at = #{updatedAt}, version = version + 1
+        WHERE id = #{id} AND user_id = #{userId} AND state = 'ACTIVE' AND version = #{version}
+    </update>
+
+    <update id="softDelete" parameterType="com.lxe.lx.pojo.AiConversation">
+        UPDATE ai_conversation
+        SET state = 'DELETED', deleted_at = #{deletedAt}, updated_at = #{updatedAt}, version = version + 1
+        WHERE id = #{id} AND user_id = #{userId} AND state = 'ACTIVE' AND version = #{version}
+    </update>
+</mapper>
