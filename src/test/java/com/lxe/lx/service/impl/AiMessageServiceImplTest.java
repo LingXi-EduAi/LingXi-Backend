@@ -42,6 +42,42 @@ class AiMessageServiceImplTest {
     }
 
     @Test
+    void savesUserQuestionWithAttachments() {
+        when(mapper.findByTaskAndRole("task-1", "user")).thenReturn(null);
+
+        AiMessage saved = service.saveUserQuestion(
+                "conversation-1", "task-1", "question", "[{\"type\":\"image\",\"url\":\"a.png\"}]");
+
+        assertEquals("[{\"type\":\"image\",\"url\":\"a.png\"}]", saved.getAttachments());
+        verify(mapper).insert(saved);
+    }
+
+    @Test
+    void savesAssistantAnswerWithAttachments() {
+        when(mapper.findByTaskAndRole("task-1", "assistant")).thenReturn(null);
+        when(mapper.findByDifyMessageId("message-1")).thenReturn(null);
+
+        AiMessage saved = service.saveAssistantAnswer(
+                "conversation-1", "task-1", "answer", "message-1", "[{\"type\":\"file\"}]");
+
+        assertEquals("[{\"type\":\"file\"}]", saved.getAttachments());
+        verify(mapper).insert(saved);
+    }
+
+    @Test
+    void savesAssistantErrorWithErrorFields() {
+        when(mapper.findByTaskAndRole("task-1", "assistant")).thenReturn(null);
+
+        AiMessage saved = service.saveAssistantError(
+                "conversation-1", "task-1", "DIFY_STREAM_ERROR", "模型调用失败", "message-1");
+
+        assertEquals("FAILED", saved.getStatus());
+        assertEquals("DIFY_STREAM_ERROR", saved.getErrorCode());
+        assertEquals("模型调用失败", saved.getErrorMessage());
+        verify(mapper).insert(saved);
+    }
+
+    @Test
     void rejectsBlankContentAndInvalidPage() {
         assertEquals(null, service.saveUserQuestion("conversation-1", "task-1", " "));
         assertTrue(service.getMessagesByConversation("conversation-1", 0, 20).isEmpty());

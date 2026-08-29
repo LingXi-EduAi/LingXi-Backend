@@ -24,4 +24,15 @@
         WHERE message_id = #{messageId}
         ORDER BY score DESC, created_at ASC, id ASC
     </select>
+
+    <delete id="deleteOlderThan">
+        DELETE FROM ai_evidence WHERE created_at &lt; #{cutoff}
+    </delete>
+
+    <delete id="deleteByConversation">
+        DELETE FROM ai_evidence
+        WHERE message_id IN (
+            SELECT id FROM ai_message WHERE conversation_id = #{conversationId}
+        )
+    </delete>
 </mapper>

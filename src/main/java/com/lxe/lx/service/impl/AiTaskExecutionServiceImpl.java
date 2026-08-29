@@ -168,7 +168,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
         private final List<AiEvidence> evidences = new ArrayList<>();
         private final Set<String> evidenceKeys = new HashSet<>();
         private final long startedAtMs = System.currentTimeMillis();
-        private boolean modelCallLogged;
+        private final Set<String> loggedNodes = new HashSet<>();
 
         private ExecutionListener(AiTask task, String subtaskId,
                                   DifyEventAdapter.Context context) {
@@ -193,8 +193,11 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                 String resultJson = isFinished(event) ? resultJson() : null;
                 String errorCode = isError(event) ? text(event.getPayload(), "code") : null;
                 String errorMessage = isError(event) ? text(event.getPayload(), "message") : null;
+                if (isNodeEvent(sourceEvent)) {
+                    recordModelCall(sourceEvent, null, false);
+                }
                 if (isFinished(event) || isError(event)) {
-                    recordModelCall(sourceEvent, isError(event) ? errorCode : null);
+                    recordModelCall(sourceEvent, isError(event) ? errorCode : null, true);
                     resultPersistenceService.recordTerminalEvent(
                             task.getId(), subtaskId, event, sourceId(sourceEvent),
                             resultJson, errorCode, errorMessage,
@@ -218,7 +221,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                         task.getId(), subtaskId, event, "lingxi:stream_completed",
                         resultJson(), null, null, answer.toString(), null, evidences);
             }
-            recordModelCall(null, null);
+            recordModelCall(null, null, true);
             runtimeRegistry.remove(task.getId());
         }
 
@@ -230,7 +233,7 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
                 record(subtaskId, task.getId(), event, "lingxi:stream_error:" + UUID.randomUUID(),
                         null, "DIFY_STREAM_ERROR", exception.getMessage());
             }
-            recordModelCall(null, "DIFY_STREAM_ERROR");
+            recordModelCall(null, "DIFY_STREAM_ERROR", true);
             runtimeRegistry.remove(task.getId());
         }
 
@@ -253,23 +256,60 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
             return writeJson(result);
         }
 
-        private void recordModelCall(JsonNode sourceEvent, String errorCode) {
-            if (modelCallLogged) {
+        private boolean isNodeEvent(JsonNode sourceEvent) {
+            if (sourceEvent == null) {
+                return false;
+            }
+            String eventType = sourceEvent.path("event").asText();
+            return "node_started".equals(eventType) || "node_finished".equals(eventType);
+        }
+
+        private void recordModelCall(JsonNode sourceEvent, String errorCode, boolean terminal) {
+            String nodeName = StringUtils.defaultIfBlank(nodeName(sourceEvent), task.getTaskType());
+            if (terminal && !loggedNodes.isEmpty()) {
                 return;
             }
-            modelCallLogged = true;
+            if (!loggedNodes.add(nodeName)) {
+                return;
+            }
             AiModelCallLog log = new AiModelCallLog();
             log.setId(UUID.randomUUID().toString().replace("-", ""));
             log.setTaskId(task.getId());
             log.setUserId(task.getUserId());
-            log.setNodeName(task.getTaskType());
-            log.setModel(task.getTaskType());
+            log.setNodeName(nodeName);
+            log.setModel(StringUtils.defaultIfBlank(modelName(sourceEvent), task.getTaskType()));
             log.setLatencyMs(Math.max(0L, System.currentTimeMillis() - startedAtMs));
             log.setTotalTokens(totalTokens(sourceEvent));
             log.setCost(cost(sourceEvent));
             log.setErrorCode(errorCode);
             log.setCreatedAt(LocalDateTime.now());
             modelCallLogService.recordAsync(log);
+        }
+
+        private String nodeName(JsonNode sourceEvent) {
+            if (sourceEvent == null) {
+                return null;
+            }
+            JsonNode data = sourceEvent.path("data");
+            String title = data.path("title").asText();
+            if (StringUtils.isNotBlank(title)) {
+                return title;
+            }
+            String nodeId = data.path("node_id").asText();
+            return StringUtils.isBlank(nodeId) ? null : nodeId;
+        }
+
+        private String modelName(JsonNode sourceEvent) {
+            if (sourceEvent == null) {
+                return null;
+            }
+            JsonNode usage = sourceEvent.path("metadata").path("usage");
+            String model = usage.path("model").asText();
+            if (StringUtils.isNotBlank(model)) {
+                return model;
+            }
+            String metaModel = sourceEvent.path("metadata").path("model").asText();
+            return StringUtils.isBlank(metaModel) ? null : metaModel;
         }
 
         private Long totalTokens(JsonNode sourceEvent) {

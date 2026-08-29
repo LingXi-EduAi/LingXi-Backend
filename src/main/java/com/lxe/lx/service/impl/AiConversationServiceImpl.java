@@ -125,6 +125,9 @@ public class AiConversationServiceImpl implements AiConversationService {
             view.setContent(message.getContent());
             view.setStatus(message.getStatus());
             view.setDifyMessageId(message.getDifyMessageId());
+            view.setAttachments(message.getAttachments());
+            view.setErrorCode(message.getErrorCode());
+            view.setErrorMessage(message.getErrorMessage());
             view.setCreatedAt(message.getCreatedAt());
             List<AiEvidence> evidence = evidenceService.getByMessageId(message.getId());
             view.setEvidence(evidence);

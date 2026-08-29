@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -23,4 +24,7 @@ public interface AiModelCallLogMapper {
     List<AiModelCallLog> findAllByQuery(AiModelCallLogQuery query);
 
     int countByQuery(AiModelCallLogQuery query);
+
+    /** 删除创建时间早于 cutoff 的模型调用日志，返回删除行数。 */
+    int deleteOlderThan(@Param("cutoff") LocalDateTime cutoff);
 }

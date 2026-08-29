@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.AiAuditLogMapper">
+    <resultMap id="AiAuditLogMap" type="com.lxe.lx.pojo.AiAuditLog">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="path" property="path"/>
+        <result column="method" property="method"/>
+        <result column="ip" property="ip"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.lxe.lx.pojo.AiAuditLog">
+        INSERT INTO ai_audit_log
+        (id, user_id, path, method, ip, created_at)
+        VALUES
+        (#{id}, #{userId}, #{path}, #{method}, #{ip}, #{createdAt})
+    </insert>
+
+    <delete id="deleteOlderThan">
+        DELETE FROM ai_audit_log WHERE created_at &lt; #{cutoff}
+    </delete>
+</mapper>

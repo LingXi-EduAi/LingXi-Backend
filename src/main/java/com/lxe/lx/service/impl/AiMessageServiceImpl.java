@@ -21,6 +21,12 @@ public class AiMessageServiceImpl implements AiMessageService {
 
     @Override
     public AiMessage saveUserQuestion(String conversationId, String taskId, String content) {
+        return saveUserQuestion(conversationId, taskId, content, null);
+    }
+
+    @Override
+    public AiMessage saveUserQuestion(String conversationId, String taskId, String content,
+                                      String attachments) {
         if (StringUtils.isBlank(content)) {
             return null;
         }
@@ -29,6 +35,7 @@ public class AiMessageServiceImpl implements AiMessageService {
             return existing;
         }
         AiMessage message = newMessage(conversationId, taskId, "user", content, null);
+        message.setAttachments(attachments);
         messageMapper.insert(message);
         return message;
     }
@@ -39,6 +46,16 @@ public class AiMessageServiceImpl implements AiMessageService {
             String taskId,
             String content,
             String difyMessageId) {
+        return saveAssistantAnswer(conversationId, taskId, content, difyMessageId, null);
+    }
+
+    @Override
+    public AiMessage saveAssistantAnswer(
+            String conversationId,
+            String taskId,
+            String content,
+            String difyMessageId,
+            String attachments) {
         if (StringUtils.isBlank(content)) {
             return null;
         }
@@ -53,6 +70,27 @@ public class AiMessageServiceImpl implements AiMessageService {
             }
         }
         AiMessage message = newMessage(conversationId, taskId, "assistant", content, difyMessageId);
+        message.setAttachments(attachments);
+        messageMapper.insert(message);
+        return message;
+    }
+
+    @Override
+    public AiMessage saveAssistantError(
+            String conversationId,
+            String taskId,
+            String errorCode,
+            String errorMessage,
+            String difyMessageId) {
+        AiMessage existing = messageMapper.findByTaskAndRole(taskId, "assistant");
+        if (existing != null) {
+            return existing;
+        }
+        AiMessage message = newMessage(conversationId, taskId, "assistant",
+                StringUtils.defaultString(errorMessage), difyMessageId);
+        message.setStatus("FAILED");
+        message.setErrorCode(errorCode);
+        message.setErrorMessage(errorMessage);
         messageMapper.insert(message);
         return message;
     }

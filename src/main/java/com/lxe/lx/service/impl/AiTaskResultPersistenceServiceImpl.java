@@ -7,6 +7,7 @@ import com.lxe.lx.service.AiEventService;
 import com.lxe.lx.service.AiEvidenceService;
 import com.lxe.lx.service.AiMessageService;
 import com.lxe.lx.service.AiTaskResultPersistenceService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,8 +46,14 @@ public class AiTaskResultPersistenceServiceImpl implements AiTaskResultPersisten
                 resultJson, errorCode, errorMessage) == null) {
             return;
         }
-        AiMessage message = messageService.saveAssistantAnswer(
-                event.getConversationId(), taskId, answer, difyMessageId);
+        AiMessage message;
+        if (StringUtils.isNotBlank(errorCode)) {
+            message = messageService.saveAssistantError(
+                    event.getConversationId(), taskId, errorCode, errorMessage, difyMessageId);
+        } else {
+            message = messageService.saveAssistantAnswer(
+                    event.getConversationId(), taskId, answer, difyMessageId);
+        }
         if (message != null) {
             evidenceService.saveAll(message.getId(),
                     evidences == null ? Collections.emptyList() : evidences);

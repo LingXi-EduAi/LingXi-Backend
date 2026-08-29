@@ -2,10 +2,12 @@ package com.lxe.lx.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lxe.lx.domain.AiTaskStatus;
+import com.lxe.lx.domain.dto.LingXiEvent;
 import com.lxe.lx.gateway.DifyGateway;
 import com.lxe.lx.mapper.AiEventMapper;
 import com.lxe.lx.mapper.AiSubtaskMapper;
 import com.lxe.lx.mapper.AiTaskMapper;
+import com.lxe.lx.pojo.AiEvent;
 import com.lxe.lx.pojo.AiSubtask;
 import com.lxe.lx.pojo.AiTask;
 import com.lxe.lx.service.AiEventService;
@@ -20,12 +22,16 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -35,7 +41,9 @@ import static org.mockito.Mockito.when;
 class AiTaskControlServiceImplTest {
     private AiTaskMapper taskMapper;
     private AiSubtaskMapper subtaskMapper;
+    private AiEventMapper eventMapper;
     private AiEventService eventService;
+    private TaskEventBroadcaster broadcaster;
     private AiRuntimeRegistry runtimeRegistry;
     private DifyGateway difyGateway;
     private AiTaskExecutionService executionService;
@@ -46,7 +54,9 @@ class AiTaskControlServiceImplTest {
     void setUp() {
         taskMapper = mock(AiTaskMapper.class);
         subtaskMapper = mock(AiSubtaskMapper.class);
+        eventMapper = mock(AiEventMapper.class);
         eventService = mock(AiEventService.class);
+        broadcaster = mock(TaskEventBroadcaster.class);
         runtimeRegistry = mock(AiRuntimeRegistry.class);
         difyGateway = mock(DifyGateway.class);
         executionService = mock(AiTaskExecutionService.class);
@@ -54,9 +64,9 @@ class AiTaskControlServiceImplTest {
         service = new AiTaskControlServiceImpl(
                 taskMapper,
                 subtaskMapper,
-                mock(AiEventMapper.class),
+                eventMapper,
                 eventService,
-                mock(TaskEventBroadcaster.class),
+                broadcaster,
                 runtimeRegistry,
                 difyGateway,
                 executionService,
@@ -94,6 +104,79 @@ class AiTaskControlServiceImplTest {
                 () -> service.subscribe("task-1", "user-1", "other-task:2"));
 
         assertEquals(400, exception.getHttpStatus());
+    }
+
+    @Test
+    void subscribeReplaysEventsAfterLastEventId() {
+        AiTask running = task(AiTaskStatus.RUNNING);
+        running.setEventSequence(4L);
+        when(taskMapper.findByIdAndUser("task-1", "user-1")).thenReturn(running);
+        AiEvent event3 = event(3L);
+        AiEvent event4 = event(4L);
+        when(eventMapper.findAfterSequence("task-1", 2)).thenReturn(Arrays.asList(event3, event4));
+        when(eventService.toContract(event3, "conversation-1")).thenReturn(contract(3L));
+        when(eventService.toContract(event4, "conversation-1")).thenReturn(contract(4L));
+        when(broadcaster.subscribe(any(), any()))
+                .thenReturn(mock(TaskEventBroadcaster.Subscription.class));
+
+        SseEmitter emitter = service.subscribe("task-1", "user-1", "task-1:2");
+
+        assertNotNull(emitter);
+        verify(eventMapper).findAfterSequence("task-1", 2);
+        verify(eventService).toContract(event3, "conversation-1");
+        verify(eventService).toContract(event4, "conversation-1");
+        verify(broadcaster).subscribe(eq("task-1"), any());
+    }
+
+    @Test
+    void subscribeRejectsSequenceBeyondTaskRange() {
+        AiTask running = task(AiTaskStatus.RUNNING);
+        running.setEventSequence(4L);
+        when(taskMapper.findByIdAndUser("task-1", "user-1")).thenReturn(running);
+
+        AiTaskApiException exception = assertThrows(AiTaskApiException.class,
+                () -> service.subscribe("task-1", "user-1", "task-1:5"));
+
+        assertEquals(400, exception.getHttpStatus());
+        verify(eventMapper, never()).findAfterSequence(any(), anyLong());
+    }
+
+    @Test
+    void subscribeCompletesWhenTerminalAndUpToDate() {
+        AiTask succeeded = task(AiTaskStatus.SUCCEEDED);
+        succeeded.setEventSequence(4L);
+        when(taskMapper.findByIdAndUser("task-1", "user-1")).thenReturn(succeeded);
+        when(eventMapper.findAfterSequence("task-1", 4)).thenReturn(Collections.emptyList());
+        when(broadcaster.subscribe(any(), any()))
+                .thenReturn(mock(TaskEventBroadcaster.Subscription.class));
+
+        SseEmitter emitter = service.subscribe("task-1", "user-1", "task-1:4");
+
+        assertNotNull(emitter);
+        // 终态且已消费到最新事件 → session.complete()，emitter 拒绝后续发送
+        assertThrows(IllegalStateException.class, () -> emitter.send("after-complete"));
+    }
+
+    @Test
+    void subscribeHidesTaskOwnedByAnotherUser() {
+        when(taskMapper.findByIdAndUser("task-1", "user-2")).thenReturn(null);
+
+        AiTaskApiException exception = assertThrows(AiTaskApiException.class,
+                () -> service.subscribe("task-1", "user-2", null));
+
+        assertEquals(404, exception.getHttpStatus());
+        verify(eventMapper, never()).findAfterSequence(any(), anyLong());
+    }
+
+    @Test
+    void stopHidesTaskOwnedByAnotherUser() {
+        when(taskMapper.lockById("task-1")).thenReturn(task(AiTaskStatus.RUNNING));
+
+        AiTaskApiException exception = assertThrows(AiTaskApiException.class,
+                () -> service.stop("task-1", "user-2"));
+
+        assertEquals(404, exception.getHttpStatus());
+        verify(eventService, never()).record(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -232,4 +315,24 @@ class AiTaskControlServiceImplTest {
         subtask.setVersion(1);
         return subtask;
     }
+
+    private AiEvent event(long sequence) {
+        AiEvent event = new AiEvent();
+        event.setTaskId("task-1");
+        event.setSequence(sequence);
+        event.setEventType("node_progress");
+        event.setStatus("RUNNING");
+        return event;
+    }
+
+    private LingXiEvent contract(long sequence) {
+        LingXiEvent event = new LingXiEvent();
+        event.setEventId("task-1:" + sequence);
+        event.setSequence(sequence);
+        event.setEventType("node_progress");
+        event.setStatus("RUNNING");
+        event.setPayload(Collections.emptyMap());
+        return event;
+    }
 }
+

@@ -36,4 +36,10 @@ public interface AiTaskMapper {
     List<AiTask> findRunningTasks();
 
     int restartForRetry(AiTask task);
+
+    /** 删除指定任务（按 id 与所属用户），返回删除行数。 */
+    int deleteByIdAndUser(@Param("id") String id, @Param("userId") String userId);
+
+    /** 删除指定会话下的所有任务，返回删除行数。 */
+    int deleteByConversation(@Param("conversationId") String conversationId);
 }

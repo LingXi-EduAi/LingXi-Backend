@@ -60,6 +60,27 @@ class AiTaskResultPersistenceServiceImplTest {
     }
 
     @Test
+    void writesErrorIntoAssistantMessageWhenErrorCodePresent() {
+        AiMessage message = new AiMessage();
+        message.setId("message-1");
+        when(eventService.record(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new AiEvent());
+        when(messageService.saveAssistantError(
+                "conversation-1", "task-1", "DIFY_STREAM_ERROR", "模型调用失败", "dify-message-1"))
+                .thenReturn(message);
+
+        service.recordTerminalEvent(
+                "task-1", "subtask-1", event(), "source-1", null,
+                "DIFY_STREAM_ERROR", "模型调用失败", null, "dify-message-1",
+                Collections.emptyList());
+
+        verify(messageService).saveAssistantError(
+                "conversation-1", "task-1", "DIFY_STREAM_ERROR", "模型调用失败", "dify-message-1");
+        verify(messageService, org.mockito.Mockito.never())
+                .saveAssistantAnswer(any(), any(), any(), any());
+    }
+
+    @Test
     void skipsMessageWhenEventWasDuplicateOrIgnored() {
         when(eventService.record(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(null);

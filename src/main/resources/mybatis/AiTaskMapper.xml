@@ -89,4 +89,12 @@
             updated_at = #{updatedAt}, version = version + 1
         WHERE id = #{id} AND status IN ('FAILED', 'PARTIAL_SUCCESS') AND version = #{version}
     </update>
+
+    <delete id="deleteByIdAndUser">
+        DELETE FROM ai_task WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <delete id="deleteByConversation">
+        DELETE FROM ai_task WHERE conversation_id = #{conversationId}
+    </delete>
 </mapper>

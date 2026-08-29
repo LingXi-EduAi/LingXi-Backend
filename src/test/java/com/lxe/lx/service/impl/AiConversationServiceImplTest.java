@@ -46,6 +46,16 @@ class AiConversationServiceImplTest {
     }
 
     @Test
+    void requireActiveOwnedRejectsConversationOfAnotherUser() {
+        when(mapper.findByIdAndUser("conversation-1", "user-2")).thenReturn(null);
+
+        AiTaskApiException exception = assertThrows(AiTaskApiException.class,
+                () -> service.requireActiveOwned("conversation-1", "user-2"));
+
+        assertEquals(404, exception.getHttpStatus());
+    }
+
+    @Test
     void deleteIsIdempotentForAlreadyDeletedConversation() {
         AiConversation conversation = new AiConversation();
         conversation.setState("DELETED");

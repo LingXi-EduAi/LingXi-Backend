@@ -1,6 +1,7 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.annotation.Login;
+import com.lxe.lx.annotation.RateLimit;
 import com.lxe.lx.domain.dto.AiTaskRequest;
 import com.lxe.lx.domain.dto.AiTaskResponse;
 import com.lxe.lx.domain.dto.AiApiResponse;
@@ -88,6 +89,7 @@ public class AiTaskController {
     }
 
     @Login
+    @RateLimit
     @PostMapping("/tasks")
     public ResponseEntity<AiApiResponse<AiTaskCreateResponse>> createTask(
             HttpServletRequest request,
@@ -124,6 +126,7 @@ public class AiTaskController {
     }
 
     @Login
+    @RateLimit
     @PostMapping("/task")
     public ResultConstant sendTask(
             HttpServletRequest request,
@@ -151,6 +154,7 @@ public class AiTaskController {
     }
 
     @Login
+    @RateLimit
     @PostMapping("/task/stream")
     public SseEmitter streamTask(
             HttpServletRequest request,

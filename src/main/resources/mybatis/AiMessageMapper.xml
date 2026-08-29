@@ -9,14 +9,19 @@
         <result column="content" property="content"/>
         <result column="status" property="status"/>
         <result column="dify_message_id" property="difyMessageId"/>
+        <result column="attachments" property="attachments"/>
+        <result column="error_code" property="errorCode"/>
+        <result column="error_message" property="errorMessage"/>
         <result column="created_at" property="createdAt"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.lxe.lx.pojo.AiMessage">
         INSERT INTO ai_message
-        (id, conversation_id, task_id, role, content, status, dify_message_id, created_at)
+        (id, conversation_id, task_id, role, content, status, dify_message_id,
+         attachments, error_code, error_message, created_at)
         VALUES
-        (#{id}, #{conversationId}, #{taskId}, #{role}, #{content}, #{status}, #{difyMessageId}, #{createdAt})
+        (#{id}, #{conversationId}, #{taskId}, #{role}, #{content}, #{status}, #{difyMessageId},
+         #{attachments}, #{errorCode}, #{errorMessage}, #{createdAt})
         ON DUPLICATE KEY UPDATE id = id
     </insert>
 
@@ -41,4 +46,12 @@
     <select id="countByConversation" resultType="java.lang.Integer">
         SELECT COUNT(*) FROM ai_message WHERE conversation_id = #{conversationId}
     </select>
+
+    <delete id="deleteOlderThan">
+        DELETE FROM ai_message WHERE created_at &lt; #{cutoff}
+    </delete>
+
+    <delete id="deleteByConversation">
+        DELETE FROM ai_message WHERE conversation_id = #{conversationId}
+    </delete>
 </mapper>

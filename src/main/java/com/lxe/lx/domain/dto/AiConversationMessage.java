@@ -18,6 +18,9 @@ public class AiConversationMessage {
     private String content;
     private String status;
     private String difyMessageId;
+    private String attachments;
+    private String errorCode;
+    private String errorMessage;
     private LocalDateTime createdAt;
     private List<AiEvidence> evidence = new ArrayList<>();
 }

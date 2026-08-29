@@ -60,4 +60,8 @@
         INNER JOIN ai_task t ON t.id = l.task_id
         <include refid="queryWhere"/>
     </select>
+
+    <delete id="deleteOlderThan">
+        DELETE FROM ai_model_call_log WHERE created_at &lt; #{cutoff}
+    </delete>
 </mapper>

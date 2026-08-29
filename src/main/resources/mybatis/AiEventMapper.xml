@@ -34,4 +34,12 @@
         WHERE task_id = #{taskId} AND sequence &gt; #{sequence}
         ORDER BY sequence ASC
     </select>
+
+    <delete id="deleteOlderThan">
+        DELETE FROM ai_event WHERE occurred_at &lt; #{cutoff}
+    </delete>
+
+    <delete id="deleteByTask">
+        DELETE FROM ai_event WHERE task_id = #{taskId}
+    </delete>
 </mapper>

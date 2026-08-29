@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -26,4 +27,10 @@ public interface AiMessageMapper {
     );
 
     int countByConversation(@Param("conversationId") String conversationId);
+
+    /** 删除创建时间早于 cutoff 的消息，返回删除行数。 */
+    int deleteOlderThan(@Param("cutoff") LocalDateTime cutoff);
+
+    /** 删除指定会话下的所有消息，返回删除行数。 */
+    int deleteByConversation(@Param("conversationId") String conversationId);
 }
