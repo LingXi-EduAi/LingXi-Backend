@@ -4,7 +4,7 @@
 
 当前开发入口： [当前基线与协作分工](当前基线与协作分工.md)。
 
-跨仓库职责、任务和协作入口：`D:\LingXiAI\LingXi-Docs\README.md`。
+跨仓库职责、任务和协作入口：`LingXi-Docs/README.md`。
 
 ## 接口与协议
 
