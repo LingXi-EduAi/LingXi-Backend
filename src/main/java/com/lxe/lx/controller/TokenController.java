@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
-import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.LinkedHashMap;
 
 import javax.servlet.http.HttpServletRequest;
 import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
@@ -40,6 +40,9 @@ public class TokenController {
     private RedisTemplate<String, TokenEntity> redisTemplate;
 
     private static final String TOKEN_PREFIX = "token:";
+    /** Redis 中每个用户当前有效 Token 的索引。 */
+    private static final String USER_TOKEN_PREFIX = "user-token:";
+    private static final long TOKEN_TTL_MINUTES = 30L;
 
     @RequestMapping(value = "/login", method = RequestMethod.POST)
     public ResultConstant login(HttpServletRequest request, @RequestBody Customer customer) {
@@ -90,29 +93,14 @@ public class TokenController {
                 tokenEntity.setState("1");
                 tokenEntity.setRole(customerTemp.getState());
 
-                // Redis 操作对象
+                // Redis 操作对象。先按 userId 失效旧 Token，再保存新 Token。
                 ValueOperations<String, TokenEntity> ops = redisTemplate.opsForValue();
+                evictPreviousToken(ops, customerTemp.getUserId(), token);
 
-                // 先检查 Redis 里是否已经有该用户的 Token（表示已登录）
-                String redisKey = "token:" + token;
-//                TokenEntity existingToken = ops.get(redisKey);
-                Object obj = ops.get(redisKey);
-                TokenEntity existingToken = new TokenEntity();
-                if (obj instanceof LinkedHashMap) {
-                    // 使用 ObjectMapper 进行转换
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    existingToken = objectMapper.convertValue(obj, TokenEntity.class);
-                } else if (obj instanceof TokenEntity) {
-                    existingToken = (TokenEntity) obj;
-                }
-
-                if (existingToken != null) {
-                    // 如果需要异地登录，则删除旧 Token
-                    redisTemplate.delete(redisKey);
-                }
-
-                // 存入 Redis，并设置过期时间（例如 30 分钟）
-                ops.set(redisKey, tokenEntity, 30, TimeUnit.MINUTES);
+                String redisKey = TOKEN_PREFIX + token;
+                ops.set(redisKey, tokenEntity, TOKEN_TTL_MINUTES, TimeUnit.MINUTES);
+                ops.set(USER_TOKEN_PREFIX + customerTemp.getUserId(), tokenEntity,
+                        TOKEN_TTL_MINUTES, TimeUnit.MINUTES);
 
                 return ResultConstant.success(token);
             } else {
@@ -123,6 +111,22 @@ public class TokenController {
             logger.error("login->error" + e.getMessage());
             return ResultConstant.error("登录失败");
         }
+    }
+
+    private void evictPreviousToken(ValueOperations<String, TokenEntity> ops,
+                                    String userId, String newToken) {
+        Object previousValue = ops.get(USER_TOKEN_PREFIX + userId);
+        TokenEntity previous = null;
+        if (previousValue instanceof TokenEntity) {
+            previous = (TokenEntity) previousValue;
+        } else if (previousValue instanceof LinkedHashMap) {
+            previous = new ObjectMapper().convertValue(previousValue, TokenEntity.class);
+        }
+        if (previous == null || StringUtils.isBlank(previous.getToken())
+                || newToken.equals(previous.getToken())) {
+            return;
+        }
+        redisTemplate.delete(TOKEN_PREFIX + previous.getToken());
     }
 
     //    public ResultConstant login(HttpServletRequest request, @RequestBody Customer customer) {
@@ -235,11 +239,15 @@ public class TokenController {
                 return ResultConstant.error("缺少 token 值");
             }
 
+            TokenEntity tokenEntity = (TokenEntity) request.getAttribute(ORG_ID_KEY);
             // 移除 request 中的 token 信息
             request.removeAttribute(ORG_ID_KEY);
 
             // 🚀 直接从 Redis 删除 Token
             Boolean deleted = redisTemplate.delete(TOKEN_PREFIX + token);
+            if (tokenEntity != null && token.equals(tokenEntity.getToken())) {
+                redisTemplate.delete(USER_TOKEN_PREFIX + tokenEntity.getUserId());
+            }
             if (Boolean.TRUE.equals(deleted)) {
                 return ResultConstant.success("登出成功");
             }
