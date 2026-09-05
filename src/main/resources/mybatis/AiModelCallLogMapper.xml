@@ -64,4 +64,20 @@
     <delete id="deleteOlderThan">
         DELETE FROM ai_model_call_log WHERE created_at &lt; #{cutoff}
     </delete>
+
+    <select id="aggregateByStudentClass" resultType="com.lxe.lx.pojo.StudentModelUsage">
+        SELECT t.user_id            AS userId,
+               COUNT(l.id)          AS callCount,
+               COALESCE(SUM(l.total_tokens), 0) AS totalTokens,
+               COALESCE(SUM(l.latency_ms), 0)   AS totalLatencyMs,
+               COALESCE(SUM(l.cost), 0)         AS totalCost,
+               COALESCE(SUM(CASE
+                   WHEN l.error_code IS NOT NULL AND l.error_code != '' THEN 1
+                   ELSE 0 END), 0)  AS failedCount
+        FROM ai_model_call_log l
+        INNER JOIN ai_task t ON t.id = l.task_id
+        INNER JOIN lx_customer c ON c.id = t.user_id
+        WHERE c.class_id = #{classId} AND c.state = '2'
+        GROUP BY t.user_id
+    </select>
 </mapper>

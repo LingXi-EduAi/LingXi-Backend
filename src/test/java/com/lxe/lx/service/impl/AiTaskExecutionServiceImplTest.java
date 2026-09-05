@@ -192,6 +192,52 @@ class AiTaskExecutionServiceImplTest {
         verify(runtimeRegistry).remove("task-1");
     }
 
+    @Test
+    void emitsRealSubtaskIdAndAgentTypeForEverySubtask() throws Exception {
+        AiTask task = task("WORKFLOW");
+        when(taskMapper.findById("task-1")).thenReturn(task);
+        AiSubtask first = subtask("subtask-1", 1, "WORKFLOW");
+        AiSubtask second = subtask("subtask-2", 2, "WORKFLOW");
+        when(subtaskMapper.findByTaskId("task-1")).thenReturn(List.of(first, second));
+
+        DifyStreamListener[] captured = new DifyStreamListener[1];
+        when(difyGateway.streamWorkflow(anyMap(), eq("user-1"), any(DifyStreamListener.class)))
+                .thenAnswer(invocation -> {
+                    captured[0] = invocation.getArgument(2);
+                    return mock(DifyStream.class);
+                });
+
+        service.execute("task-1");
+
+        // 1 task_started + (TASK_DECOMPOSED + AGENT_ASSIGNED) x 2 subtasks = 5 records
+        ArgumentCaptor<String> subtaskIdCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<LingXiEvent> eventCaptor = ArgumentCaptor.forClass(LingXiEvent.class);
+        verify(eventService, org.mockito.Mockito.times(5))
+                .record(eq("task-1"), subtaskIdCaptor.capture(), eventCaptor.capture(),
+                        any(), any(), any(), any());
+
+        List<String> subtaskIds = subtaskIdCaptor.getAllValues();
+        List<LingXiEvent> events = eventCaptor.getAllValues();
+
+        // index 0 = task_started (no subtask)
+        assertEquals(null, subtaskIds.get(0));
+        assertEquals(LingXiEventType.TASK_STARTED, events.get(0).getEventType());
+
+        // First subtask: TASK_DECOMPOSED then AGENT_ASSIGNED
+        assertEquals("subtask-1", subtaskIds.get(1));
+        assertEquals(LingXiEventType.TASK_DECOMPOSED, events.get(1).getEventType());
+        assertEquals("subtask-1", subtaskIds.get(2));
+        assertEquals(LingXiEventType.AGENT_ASSIGNED, events.get(2).getEventType());
+        assertEquals("WORKFLOW", events.get(2).getPayload().get("agentType"));
+
+        // Second subtask: TASK_DECOMPOSED then AGENT_ASSIGNED
+        assertEquals("subtask-2", subtaskIds.get(3));
+        assertEquals(LingXiEventType.TASK_DECOMPOSED, events.get(3).getEventType());
+        assertEquals("subtask-2", subtaskIds.get(4));
+        assertEquals(LingXiEventType.AGENT_ASSIGNED, events.get(4).getEventType());
+        assertEquals("WORKFLOW", events.get(4).getPayload().get("agentType"));
+    }
+
     private JsonNode errorEvent() throws Exception {
         String json = "{\"event\":\"error\",\"status\":503,\"code\":\"upstream_error\","
                 + "\"message\":\"服务暂时不可用\"}";
@@ -223,15 +269,19 @@ class AiTaskExecutionServiceImplTest {
     }
 
     private AiSubtask subtask() {
+        return subtask("subtask-1", 1, "WORKFLOW");
+    }
+
+    private AiSubtask subtask(String id, int executionNo, String agentType) {
         AiSubtask subtask = new AiSubtask();
-        subtask.setId("subtask-1");
+        subtask.setId(id);
         subtask.setTaskId("task-1");
-        subtask.setAgentType("WORKFLOW");
+        subtask.setAgentType(agentType);
         subtask.setGoal("goal");
         subtask.setInputsJson("{}");
         subtask.setDependencyJson("[]");
         subtask.setStatus("CREATED");
-        subtask.setExecutionNo(1);
+        subtask.setExecutionNo(executionNo);
         subtask.setRetryCount(0);
         subtask.setVersion(1);
         return subtask;

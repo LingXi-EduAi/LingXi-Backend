@@ -22,6 +22,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
@@ -93,26 +94,24 @@ public class TokenController {
                 // Redis 操作对象
                 ValueOperations<String, TokenEntity> ops = redisTemplate.opsForValue();
 
-                // 先检查 Redis 里是否已经有该用户的 Token（表示已登录）
-                String redisKey = "token:" + token;
-//                TokenEntity existingToken = ops.get(redisKey);
-                Object obj = ops.get(redisKey);
-                TokenEntity existingToken = new TokenEntity();
-                if (obj instanceof LinkedHashMap) {
-                    // 使用 ObjectMapper 进行转换
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    existingToken = objectMapper.convertValue(obj, TokenEntity.class);
-                } else if (obj instanceof TokenEntity) {
-                    existingToken = (TokenEntity) obj;
-                }
-
-                if (existingToken != null) {
-                    // 如果需要异地登录，则删除旧 Token
-                    redisTemplate.delete(redisKey);
+                // 同一用户再次登录时，使其旧 token 全部失效（防止无限并发登录）
+                String userId = customerTemp.getUserId();
+                String customerId = customerTemp.getId();
+                Set<String> keys = redisTemplate.keys(TOKEN_PREFIX + "*");
+                if (keys != null && !keys.isEmpty()) {
+                    for (String key : keys) {
+                        Object val = redisTemplate.opsForValue().get(key);
+                        TokenEntity holder = toTokenEntity(val);
+                        if (holder != null
+                                && (userId.equals(holder.getUserId())
+                                || customerId.equals(holder.getId()))) {
+                            redisTemplate.delete(key);
+                        }
+                    }
                 }
 
                 // 存入 Redis，并设置过期时间（例如 30 分钟）
-                ops.set(redisKey, tokenEntity, 30, TimeUnit.MINUTES);
+                ops.set(TOKEN_PREFIX + token, tokenEntity, 30, TimeUnit.MINUTES);
 
                 return ResultConstant.success(token);
             } else {
@@ -250,5 +249,15 @@ public class TokenController {
             logger.error("logout -> error: " + e.getMessage());
             return ResultConstant.error("登出失败");
         }
+    }
+
+    private TokenEntity toTokenEntity(Object obj) {
+        if (obj instanceof TokenEntity) {
+            return (TokenEntity) obj;
+        }
+        if (obj instanceof LinkedHashMap) {
+            return new ObjectMapper().convertValue(obj, TokenEntity.class);
+        }
+        return null;
     }
 }

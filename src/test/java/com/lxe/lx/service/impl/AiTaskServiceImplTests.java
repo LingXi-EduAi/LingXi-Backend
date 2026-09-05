@@ -1,6 +1,7 @@
 package com.lxe.lx.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lxe.lx.domain.dto.AiTaskCreateRequest;
 import com.lxe.lx.domain.dto.AiTaskRequest;
 import com.lxe.lx.gateway.AiAgentRouter;
 import com.lxe.lx.gateway.DifyEventAdapter;
@@ -10,19 +11,28 @@ import com.lxe.lx.gateway.DifyStream;
 import com.lxe.lx.gateway.DifyStreamListener;
 import com.lxe.lx.mapper.AiSubtaskMapper;
 import com.lxe.lx.mapper.AiTaskMapper;
+import com.lxe.lx.pojo.AiSubtask;
 import com.lxe.lx.service.AiConversationService;
 import com.lxe.lx.service.AiMessageService;
 import com.lxe.lx.service.AiTaskExecutionService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,12 +46,25 @@ class AiTaskServiceImplTests {
     private final AiAgentRouter agentRouter = mock(AiAgentRouter.class);
     private final DifyEventAdapter eventAdapter = new DifyEventAdapter(new ObjectMapper());
     private final TaskScheduler taskScheduler = mock(TaskScheduler.class);
+    private final AiTaskMapper aiTaskMapper = mock(AiTaskMapper.class);
+    private final AiSubtaskMapper aiSubtaskMapper = mock(AiSubtaskMapper.class);
+    private final AiTaskExecutionService executionService = mock(AiTaskExecutionService.class);
     private final AiTaskServiceImpl service = new AiTaskServiceImpl(
             difyGateway, agentRouter, eventAdapter, taskScheduler,
-            mock(AiTaskMapper.class), mock(AiSubtaskMapper.class),
-            mock(AiTaskExecutionService.class), mock(TaskExecutor.class), new ObjectMapper(),
+            aiTaskMapper, aiSubtaskMapper,
+            executionService, mock(TaskExecutor.class), new ObjectMapper(),
             mock(AiMessageService.class), mock(AiConversationService.class),
             600000, 15000);
+
+    @BeforeEach
+    void initTransactionSynchronization() {
+        TransactionSynchronizationManager.initSynchronization();
+    }
+
+    @AfterEach
+    void clearTransactionSynchronization() {
+        TransactionSynchronizationManager.clear();
+    }
 
     @Test
     void streamTaskForwardsDifyEventsAndCompletesOnStreamEnd() throws Exception {
@@ -97,6 +120,60 @@ class AiTaskServiceImplTests {
         AiTaskRequest request = new AiTaskRequest();
         request.setQuery(query);
         return request;
+    }
+
+    @Test
+    void createTaskSplitsJoiningQueryIntoMultipleSubtasksWithDependencyChain() {
+        AiTaskCreateRequest createRequest = new AiTaskCreateRequest();
+        createRequest.setTaskType("CHATFLOW");
+        createRequest.setQuery("帮我做完这道几何题并检查过程");
+
+        service.createTask(createRequest, "user-1");
+
+        ArgumentCaptor<AiSubtask> captor = ArgumentCaptor.forClass(AiSubtask.class);
+        verify(aiSubtaskMapper, times(2)).insert(captor.capture());
+        List<AiSubtask> subtasks = captor.getAllValues();
+
+        assertEquals(2, subtasks.size());
+        assertEquals(1, subtasks.get(0).getExecutionNo());
+        assertEquals(2, subtasks.get(1).getExecutionNo());
+        assertEquals("[]", subtasks.get(0).getDependencyJson());
+        assertEquals("[\"" + subtasks.get(0).getId() + "\"]", subtasks.get(1).getDependencyJson());
+        assertEquals("CHATFLOW", subtasks.get(0).getAgentType());
+        assertEquals("CHATFLOW", subtasks.get(1).getAgentType());
+        assertEquals("帮我做完这道几何题", subtasks.get(0).getGoal());
+        assertEquals("检查过程", subtasks.get(1).getGoal());
+    }
+
+    @Test
+    void createTaskKeepsSingleSubtaskForPlainQuery() {
+        AiTaskCreateRequest createRequest = new AiTaskCreateRequest();
+        createRequest.setTaskType("CHATFLOW");
+        createRequest.setQuery("帮我解一道一元二次方程");
+
+        service.createTask(createRequest, "user-1");
+
+        ArgumentCaptor<AiSubtask> captor = ArgumentCaptor.forClass(AiSubtask.class);
+        verify(aiSubtaskMapper, times(1)).insert(captor.capture());
+        AiSubtask subtask = captor.getValue();
+        assertEquals(1, subtask.getExecutionNo());
+        assertEquals("[]", subtask.getDependencyJson());
+        assertEquals("帮我解一道一元二次方程", subtask.getGoal());
+    }
+
+    @Test
+    void createTaskSplitsOnThenConjunction() {
+        AiTaskCreateRequest createRequest = new AiTaskCreateRequest();
+        createRequest.setTaskType("CHATFLOW");
+        createRequest.setQuery("先求导然后求极值");
+
+        service.createTask(createRequest, "user-1");
+
+        ArgumentCaptor<AiSubtask> captor = ArgumentCaptor.forClass(AiSubtask.class);
+        verify(aiSubtaskMapper, times(2)).insert(captor.capture());
+        List<AiSubtask> subtasks = captor.getAllValues();
+        assertEquals("先求导", subtasks.get(0).getGoal());
+        assertEquals("求极值", subtasks.get(1).getGoal());
     }
 
     private com.fasterxml.jackson.databind.JsonNode messageEvent() throws Exception {
