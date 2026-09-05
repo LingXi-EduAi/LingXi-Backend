@@ -30,6 +30,7 @@ import com.lxe.lx.service.AiTaskService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.List;
 import java.util.UUID;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -226,20 +227,34 @@ public class AiTaskServiceImpl implements AiTaskService {
             messageService.saveUserQuestion(conversationId, task.getId(), request.getQuery());
         }
 
-        AiSubtask subtask = new AiSubtask();
-        subtask.setId(uuid());
-        subtask.setTaskId(task.getId());
-        subtask.setAgentType(taskType);
-        subtask.setGoal(StringUtils.defaultIfBlank(request.getQuery(), "执行 Workflow"));
-        subtask.setInputsJson(writeJson(request.getInputs() == null ? Collections.emptyMap() : request.getInputs()));
-        subtask.setDependencyJson("[]");
-        subtask.setStatus("CREATED");
-        subtask.setExecutionNo(1);
-        subtask.setRetryCount(0);
-        subtask.setVersion(1);
-        subtask.setCreatedAt(task.getCreatedAt());
-        subtask.setUpdatedAt(task.getCreatedAt());
-        aiSubtaskMapper.insert(subtask);
+        // BE-04: Decompose query into multiple subtasks with dependency chain.
+        // If no conjunction found, produces a single subtask (backwards-compatible).
+        String queryForDecompose = StringUtils.defaultIfBlank(request.getQuery(), "执行 Workflow");
+        List<TaskDecomposer.SubtaskSpec> subtaskSpecs =
+                TaskDecomposer.decompose(queryForDecompose, taskType);
+        String inputsJson = writeJson(
+                request.getInputs() == null ? Collections.emptyMap() : request.getInputs());
+        String prevSubtaskId = null;
+        for (TaskDecomposer.SubtaskSpec spec : subtaskSpecs) {
+            AiSubtask subtask = new AiSubtask();
+            String subtaskId = uuid();
+            subtask.setId(subtaskId);
+            subtask.setTaskId(task.getId());
+            subtask.setAgentType(spec.getAgentType());
+            subtask.setGoal(spec.getGoal());
+            subtask.setInputsJson(inputsJson);
+            // Sequential chain: each subtask depends on the previous one
+            subtask.setDependencyJson(
+                    prevSubtaskId == null ? "[]" : "[\"" + prevSubtaskId + "\"]");
+            subtask.setStatus("CREATED");
+            subtask.setExecutionNo(spec.getExecutionNo());
+            subtask.setRetryCount(0);
+            subtask.setVersion(1);
+            subtask.setCreatedAt(task.getCreatedAt());
+            subtask.setUpdatedAt(task.getCreatedAt());
+            aiSubtaskMapper.insert(subtask);
+            prevSubtaskId = subtaskId;
+        }
 
         final String createdTaskId = task.getId();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
