@@ -23,6 +23,7 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.LinkedHashMap;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
@@ -268,7 +269,7 @@ public class TokenController {
         if (keys == null || keys.isEmpty()) {
             return;
         }
-        for (String key : keys) {
+        for (String key : new HashSet<>(keys)) {
             if ((TOKEN_PREFIX + newToken).equals(key)) {
                 continue;
             }

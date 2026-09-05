@@ -51,7 +51,16 @@ class TokenControllerTest {
         request = mock(HttpServletRequest.class);
         when(request.getRemoteAddr()).thenReturn("192.168.1.10");
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
-        when(redisTemplate.keys(anyString())).thenAnswer(inv -> (Set<String>) store.keySet());
+        when(redisTemplate.keys(anyString())).thenAnswer(inv -> {
+            String pattern = inv.getArgument(0);
+            Set<String> matching = new java.util.HashSet<>();
+            for (String key : store.keySet()) {
+                if ("token:*".equals(pattern) && key.startsWith("token:")) {
+                    matching.add(key);
+                }
+            }
+            return matching;
+        });
         doAnswer(inv -> {
             store.put(inv.getArgument(0), inv.getArgument(1));
             return null;
