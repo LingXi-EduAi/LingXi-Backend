@@ -169,11 +169,18 @@ public class DifyGatewayImpl implements DifyGateway {
             Map<String, Object> body,
             String operation,
             DifyStreamListener listener) {
+        final long start = System.currentTimeMillis();
         final String requestJson;
         try {
             requestJson = objectMapper.writeValueAsString(body);
         } catch (IOException e) {
             throw new DifyGatewayException("序列化 " + operation + " 流式请求失败", null, false, e);
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("[Dify] {} stream -> POST {} body={}",
+                    operation, uri(credentials, path).build().encode().toUriString(),
+                    sanitizeBody(body));
         }
 
         Request httpRequest = new Request.Builder()
@@ -186,6 +193,10 @@ public class DifyGatewayImpl implements DifyGateway {
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call failedCall, IOException exception) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("[Dify] {} stream <- FAILED cost={}ms error={}",
+                            operation, System.currentTimeMillis() - start, exception.getMessage());
+                }
                 if (!failedCall.isCanceled()) {
                     listener.onError(new DifyGatewayException(
                             "无法连接 Dify 服务：" + operation + " 流式调用",
@@ -201,6 +212,11 @@ public class DifyGatewayImpl implements DifyGateway {
                 try (Response closeableResponse = response) {
                     if (!response.isSuccessful()) {
                         String responseText = response.body() == null ? "" : response.body().string();
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("[Dify] {} stream <- status={} cost={}ms error={}",
+                                    operation, response.code(), System.currentTimeMillis() - start,
+                                    sanitizeBody(responseText));
+                        }
                         listener.onError(new DifyGatewayException(
                                 operation + " 流式调用失败：" + extractErrorDetail(responseText, response.message()),
                                 response.code(),
@@ -211,6 +227,10 @@ public class DifyGatewayImpl implements DifyGateway {
                     }
                     ResponseBody responseBody = response.body();
                     if (responseBody == null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("[Dify] {} stream <- status={} cost={}ms empty-body",
+                                    operation, response.code(), System.currentTimeMillis() - start);
+                        }
                         listener.onError(new DifyGatewayException(
                                 operation + " 流式调用返回空响应",
                                 response.code(),
@@ -221,6 +241,10 @@ public class DifyGatewayImpl implements DifyGateway {
                     }
                     readEventStream(responseCall, responseBody, listener);
                     if (!responseCall.isCanceled()) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("[Dify] {} stream <- status={} cost={}ms completed",
+                                    operation, response.code(), System.currentTimeMillis() - start);
+                        }
                         listener.onComplete();
                     }
                 } catch (IOException e) {
@@ -423,13 +447,29 @@ public class DifyGatewayImpl implements DifyGateway {
             URI uri,
             HttpMethod method,
             HttpEntity<?> entity) {
+        long start = System.currentTimeMillis();
+        if (logger.isDebugEnabled()) {
+            logger.debug("[Dify] {} -> {} {} body={}",
+                    operation, method, uri, sanitizeBody(entity.getBody()));
+        }
         try {
             ResponseEntity<JsonNode> response = restTemplate.exchange(uri, method, entity, JsonNode.class);
+            if (logger.isDebugEnabled()) {
+                logger.debug("[Dify] {} <- {} {} status={} cost={}ms body={}",
+                        operation, method, uri, response.getStatusCodeValue(),
+                        System.currentTimeMillis() - start,
+                        sanitizeBody(response.getBody()));
+            }
             if (response.getBody() == null) {
                 throw new DifyGatewayException(operation + "返回空响应", null, false, null);
             }
             return response.getBody();
         } catch (HttpStatusCodeException e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("[Dify] {} <- {} {} status={} cost={}ms error={}",
+                        operation, method, uri, e.getRawStatusCode(),
+                        System.currentTimeMillis() - start, sanitizeBody(e.getResponseBodyAsString()));
+            }
             String detail = extractErrorDetail(e);
             throw new DifyGatewayException(
                     operation + "失败：" + detail,
@@ -438,8 +478,34 @@ public class DifyGatewayImpl implements DifyGateway {
                     e
             );
         } catch (ResourceAccessException e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("[Dify] {} <- {} {} cost={}ms connect-error={}",
+                        operation, method, uri, System.currentTimeMillis() - start, e.getMessage());
+            }
             throw new DifyGatewayException("无法连接 Dify 服务：" + operation, null, true, e);
         }
+    }
+
+    /**
+     * 脱敏并截断日志 body：绝不输出 api-key / Authorization / Bearer token 等密钥值。
+     */
+    private String sanitizeBody(Object body) {
+        if (body == null) {
+            return "";
+        }
+        String text;
+        if (body instanceof JsonNode) {
+            text = body.toString();
+        } else {
+            try {
+                text = objectMapper.writeValueAsString(body);
+            } catch (IOException e) {
+                text = String.valueOf(body);
+            }
+        }
+        // 防御性脱敏：即使 body 中意外包含密钥字段也一并抹除
+        text = text.replaceAll("(?i)(api[-_]?key|authorization|bearer)\\s*[:=]\\s*\"?[^,\"}\\s]+", "$1=***");
+        return StringUtils.abbreviate(text, 500);
     }
 
     private String extractErrorDetail(HttpStatusCodeException exception) {
