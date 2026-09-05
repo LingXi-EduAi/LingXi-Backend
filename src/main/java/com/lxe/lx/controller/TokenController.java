@@ -21,8 +21,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
-import java.util.concurrent.TimeUnit;
 import java.util.LinkedHashMap;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
@@ -101,6 +102,8 @@ public class TokenController {
                 ops.set(redisKey, tokenEntity, TOKEN_TTL_MINUTES, TimeUnit.MINUTES);
                 ops.set(USER_TOKEN_PREFIX + customerTemp.getUserId(), tokenEntity,
                         TOKEN_TTL_MINUTES, TimeUnit.MINUTES);
+                // 兼容没有用户索引的历史 Token：按 userId/customerId 清理旧 key。
+                evictLegacyTokens(customerTemp.getUserId(), customerTemp.getId(), token);
 
                 return ResultConstant.success(token);
             } else {
@@ -258,5 +261,32 @@ public class TokenController {
             logger.error("logout -> error: " + e.getMessage());
             return ResultConstant.error("登出失败");
         }
+    }
+
+    private void evictLegacyTokens(String userId, String customerId, String newToken) {
+        Set<String> keys = redisTemplate.keys(TOKEN_PREFIX + "*");
+        if (keys == null || keys.isEmpty()) {
+            return;
+        }
+        for (String key : keys) {
+            if ((TOKEN_PREFIX + newToken).equals(key)) {
+                continue;
+            }
+            TokenEntity holder = toTokenEntity(redisTemplate.opsForValue().get(key));
+            if (holder != null
+                    && (userId.equals(holder.getUserId()) || customerId.equals(holder.getId()))) {
+                redisTemplate.delete(key);
+            }
+        }
+    }
+
+    private TokenEntity toTokenEntity(Object obj) {
+        if (obj instanceof TokenEntity) {
+            return (TokenEntity) obj;
+        }
+        if (obj instanceof LinkedHashMap) {
+            return new ObjectMapper().convertValue(obj, TokenEntity.class);
+        }
+        return null;
     }
 }

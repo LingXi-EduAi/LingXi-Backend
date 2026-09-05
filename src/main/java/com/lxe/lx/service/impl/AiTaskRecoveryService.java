@@ -54,13 +54,13 @@ public class AiTaskRecoveryService {
                 event.setStatus("FAILED");
                 Map<String, Object> payload = new LinkedHashMap<>();
                 payload.put("code", "EXECUTION_INTERRUPTED");
-                payload.put("message", "后端服务重启，任务可重试");
+                payload.put("message", "后端重启，任务中断（可重新提问）");
                 payload.put("retryable", true);
                 event.setPayload(payload);
                 String subtaskId = subtaskMapper.findByTaskId(task.getId()).stream()
                         .findFirst().map(subtask -> subtask.getId()).orElse(null);
                 eventService.record(task.getId(), subtaskId, event, "lingxi:recovery:" + task.getId(),
-                        null, "EXECUTION_INTERRUPTED", "后端服务重启，任务可重试");
+                        null, "EXECUTION_INTERRUPTED", "后端重启，任务中断（可重新提问）");
                 stopDifyBestEffort(task);
             } catch (Exception exception) {
                 logger.error("Failed to recover interrupted AI task {}", task.getId(), exception);

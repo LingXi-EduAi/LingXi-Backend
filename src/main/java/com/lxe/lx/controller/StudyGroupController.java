@@ -5,6 +5,9 @@ import com.lxe.lx.pojo.StudyGroup;
 import com.lxe.lx.pojo.StudyGroupMember;
 import com.lxe.lx.pojo.StudyGroupMessage;
 import com.lxe.lx.pojo.TokenEntity;
+import com.lxe.lx.domain.vo.StudyGroupListVO;
+import com.lxe.lx.domain.vo.StudyGroupMembersVO;
+import com.lxe.lx.domain.vo.StudyGroupMessagesVO;
 import com.lxe.lx.service.StudyGroupService;
 import com.lxe.lx.util.ResultConstant;
 import com.lxe.lx.util.Tools;
@@ -89,9 +92,9 @@ public class StudyGroupController {
             params.put("start", start);
             params.put("pageSize", pageSize);
             List<StudyGroup> list = studyGroupService.listGroup(params);
-            Map<String, Object> dto = new HashMap<>();
-            dto.put("list", list);
-            dto.put("count", studyGroupService.numGroup(params));
+            StudyGroupListVO dto = new StudyGroupListVO();
+            dto.setList(list);
+            dto.setCount(studyGroupService.numGroup(params));
             return ResultConstant.success(dto);
         } catch (Exception e) {
             e.printStackTrace();
@@ -188,8 +191,8 @@ public class StudyGroupController {
         }
         try {
             List<StudyGroupMember> list = studyGroupService.listMembers(groupId);
-            Map<String, Object> dto = new HashMap<>();
-            dto.put("list", list);
+            StudyGroupMembersVO dto = new StudyGroupMembersVO();
+            dto.setList(list);
             return ResultConstant.success(dto);
         } catch (Exception e) {
             e.printStackTrace();
@@ -243,8 +246,8 @@ public class StudyGroupController {
             params.put("start", start);
             params.put("pageSize", pageSize);
             List<StudyGroupMessage> list = studyGroupService.listMessages(params);
-            Map<String, Object> dto = new HashMap<>();
-            dto.put("list", list);
+            StudyGroupMessagesVO dto = new StudyGroupMessagesVO();
+            dto.setList(list);
             return ResultConstant.success(dto);
         } catch (Exception e) {
             e.printStackTrace();

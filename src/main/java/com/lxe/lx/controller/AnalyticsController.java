@@ -6,6 +6,12 @@ import com.lxe.lx.util.ResultConstant;
 import com.lxe.lx.pojo.HomeworkSubmission;
 import com.lxe.lx.pojo.HomeworkAssignment;
 import com.lxe.lx.domain.qo.HomeworkSubmissionQO;
+import com.lxe.lx.domain.vo.AnalyticsStatsResponseVO;
+import com.lxe.lx.domain.vo.AnalyticsStatsVO;
+import com.lxe.lx.domain.vo.GradeDistributionVO;
+import com.lxe.lx.domain.vo.StudentNeedAttentionVO;
+import com.lxe.lx.domain.vo.TopStudentVO;
+import com.lxe.lx.domain.vo.WeakPointVO;
 import com.lxe.lx.service.HomeworkSubmissionService;
 import com.lxe.lx.service.HomeworkAssignmentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +40,7 @@ public class AnalyticsController {
      */
     @Login
     @PostMapping("/stats")
-    public Map<String, Object> getAnalyticsStats(HttpServletRequest request) {
+    public AnalyticsStatsResponseVO getAnalyticsStats(HttpServletRequest request) {
         try {
             System.out.println("========== 开始获取学情分析数据 ==========");
             
@@ -102,53 +108,53 @@ public class AnalyticsController {
                 avgScore = (double) sum / grades.size();
             }
             
-            // 构建返回数据
-            Map<String, Object> result = new HashMap<>();
-            Map<String, Object> data = new HashMap<>();
-            
+// 构建返回数据
+            AnalyticsStatsResponseVO result = new AnalyticsStatsResponseVO();
+            AnalyticsStatsVO data = new AnalyticsStatsVO();
+
             // 基础统计
-            data.put("completionRate", Math.round(completionRate));
-            data.put("averageScore", Math.round(avgScore * 10) / 10.0);
-            data.put("totalSubmissions", totalSubmissions);
-            data.put("gradedCount", gradedCount);
-            
+            data.setCompletionRate(Math.round(completionRate));
+            data.setAverageScore(Math.round(avgScore * 10) / 10.0);
+            data.setTotalSubmissions(totalSubmissions);
+            data.setGradedCount(gradedCount);
+
             // 成绩分布
-            Map<String, Object> gradeDistribution = new HashMap<>();
-            gradeDistribution.put("labels", Arrays.asList("优秀(90-100)", "良好(80-89)", "及格(60-79)", "不及格(<60)"));
-            gradeDistribution.put("data", Arrays.asList(excellent, good, pass, fail));
-            data.put("gradeDistribution", gradeDistribution);
-            
+            GradeDistributionVO gradeDistribution = new GradeDistributionVO();
+            gradeDistribution.setLabels(Arrays.asList("优秀(90-100)", "良好(80-89)", "及格(60-79)", "不及格(<60)"));
+            gradeDistribution.setData(Arrays.asList(excellent, good, pass, fail));
+            data.setGradeDistribution(gradeDistribution);
+
             // 优秀学生（取前5名）
-            List<Map<String, Object>> topStudents = getTopStudents(submissions);
-            data.put("topStudents", topStudents);
-            
+            List<TopStudentVO> topStudents = getTopStudents(submissions);
+            data.setTopStudents(topStudents);
+
             // 需要关注的学生（分数低于70分的）
-            List<Map<String, Object>> studentsNeedAttention = getStudentsNeedAttention(submissions);
-            data.put("studentsNeedAttention", studentsNeedAttention);
-            
+            List<StudentNeedAttentionVO> studentsNeedAttention = getStudentsNeedAttention(submissions);
+            data.setStudentsNeedAttention(studentsNeedAttention);
+
             // 薄弱知识点分析（正确率<70%的作业）
-            List<Map<String, Object>> weakPoints = getWeakPoints(submissions);
-            data.put("weakPoints", weakPoints);
-            data.put("weakPointsCount", weakPoints.size());
-            
-            result.put("status", ResultConstant.SUCCESS);
-            result.put("msg", "获取学情分析数据成功");
-            result.put("data", data);
+            List<WeakPointVO> weakPoints = getWeakPoints(submissions);
+            data.setWeakPoints(weakPoints);
+            data.setWeakPointsCount(weakPoints.size());
+
+            result.setStatus(ResultConstant.SUCCESS);
+            result.setMsg("获取学情分析数据成功");
+            result.setData(data);
             
             System.out.println("========== 返回数据 ==========");
-            System.out.println("完成率: " + data.get("completionRate"));
-            System.out.println("平均分: " + data.get("averageScore"));
-            System.out.println("总提交数: " + data.get("totalSubmissions"));
-            System.out.println("已批改数: " + data.get("gradedCount"));
+            System.out.println("完成率: " + data.getCompletionRate());
+            System.out.println("平均分: " + data.getAverageScore());
+            System.out.println("总提交数: " + data.getTotalSubmissions());
+            System.out.println("已批改数: " + data.getGradedCount());
             System.out.println("========== 学情分析数据返回完成 ==========");
             
             return result;
             
         } catch (Exception e) {
             e.printStackTrace();
-            Map<String, Object> result = new HashMap<>();
-            result.put("status", ResultConstant.ERROR);
-            result.put("msg", "获取学情分析数据失败：" + e.getMessage());
+            AnalyticsStatsResponseVO result = new AnalyticsStatsResponseVO();
+            result.setStatus(ResultConstant.ERROR);
+            result.setMsg("获取学情分析数据失败：" + e.getMessage());
             return result;
         }
     }
@@ -156,7 +162,7 @@ public class AnalyticsController {
     /**
      * 获取优秀学生列表
      */
-    private List<Map<String, Object>> getTopStudents(List<HomeworkSubmission> submissions) {
+    private List<TopStudentVO> getTopStudents(List<HomeworkSubmission> submissions) {
         // 按学生分组统计
         Map<String, StudentStats> studentStatsMap = new HashMap<>();
         
@@ -177,15 +183,15 @@ public class AnalyticsController {
         List<StudentStats> statsList = new ArrayList<>(studentStatsMap.values());
         statsList.sort((a, b) -> Double.compare(b.getAvgScore(), a.getAvgScore()));
         
-        List<Map<String, Object>> result = new ArrayList<>();
+        List<TopStudentVO> result = new ArrayList<>();
         for (int i = 0; i < Math.min(5, statsList.size()); i++) {
             StudentStats stats = statsList.get(i);
             if (stats.getAvgScore() >= 85) {  // 优秀学生标准
-                Map<String, Object> student = new HashMap<>();
-                student.put("name", stats.getName());
-                student.put("score", (int) Math.round(stats.getAvgScore()));
-                student.put("improvement", "+5%");  // 示例数据
-                student.put("strengths", "综合能力强");
+                TopStudentVO student = new TopStudentVO();
+                student.setName(stats.getName());
+                student.setScore((int) Math.round(stats.getAvgScore()));
+                student.setImprovement("+5%");  // 示例数据
+                student.setStrengths("综合能力强");
                 result.add(student);
             }
         }
@@ -196,7 +202,7 @@ public class AnalyticsController {
     /**
      * 获取需要关注的学生列表
      */
-    private List<Map<String, Object>> getStudentsNeedAttention(List<HomeworkSubmission> submissions) {
+    private List<StudentNeedAttentionVO> getStudentsNeedAttention(List<HomeworkSubmission> submissions) {
         // 按学生分组统计
         Map<String, StudentStats> studentStatsMap = new HashMap<>();
         
@@ -214,23 +220,23 @@ public class AnalyticsController {
         }
         
         // 筛选需要关注的学生
-        List<Map<String, Object>> result = new ArrayList<>();
+        List<StudentNeedAttentionVO> result = new ArrayList<>();
         for (StudentStats stats : studentStatsMap.values()) {
             if (stats.getAvgScore() < 75) {  // 需要关注的标准
-                Map<String, Object> student = new HashMap<>();
-                student.put("name", stats.getName());
-                student.put("score", (int) Math.round(stats.getAvgScore()));
+                StudentNeedAttentionVO student = new StudentNeedAttentionVO();
+                student.setName(stats.getName());
+                student.setScore((int) Math.round(stats.getAvgScore()));
                 
                 // 根据分数段给出建议
                 if (stats.getAvgScore() < 60) {
-                    student.put("weakness", "基础薄弱");
-                    student.put("suggestion", "一对一辅导");
+                    student.setWeakness("基础薄弱");
+                    student.setSuggestion("一对一辅导");
                 } else if (stats.getAvgScore() < 70) {
-                    student.put("weakness", "知识掌握不牢");
-                    student.put("suggestion", "加强基础训练");
+                    student.setWeakness("知识掌握不牢");
+                    student.setSuggestion("加强基础训练");
                 } else {
-                    student.put("weakness", "部分知识点欠缺");
-                    student.put("suggestion", "针对性练习");
+                    student.setWeakness("部分知识点欠缺");
+                    student.setSuggestion("针对性练习");
                 }
                 
                 result.add(student);
@@ -238,7 +244,7 @@ public class AnalyticsController {
         }
         
         // 按分数从低到高排序
-        result.sort((a, b) -> Integer.compare((Integer) a.get("score"), (Integer) b.get("score")));
+        result.sort((a, b) -> Integer.compare(a.getScore(), b.getScore()));
         
         return result;
     }
@@ -246,8 +252,8 @@ public class AnalyticsController {
     /**
      * 获取薄弱知识点列表（平均分低于80分的作业）
      */
-    private List<Map<String, Object>> getWeakPoints(List<HomeworkSubmission> submissions) {
-        List<Map<String, Object>> weakPoints = new ArrayList<>();
+    private List<WeakPointVO> getWeakPoints(List<HomeworkSubmission> submissions) {
+        List<WeakPointVO> weakPoints = new ArrayList<>();
         
         System.out.println("============ 开始分析薄弱知识点 ============");
         System.out.println("总提交数: " + submissions.size());
@@ -290,12 +296,12 @@ public class AnalyticsController {
                         System.out.println("作业标题: " + assignment.getTitle());
                         System.out.println("作业学科: " + assignment.getSubject());
                         
-                        Map<String, Object> weakPoint = new HashMap<>();
-                        weakPoint.put("subject", assignment.getSubject());
-                        weakPoint.put("title", assignment.getTitle());
-                        weakPoint.put("avgScore", Math.round(avgGrade * 10) / 10.0);
-                        weakPoint.put("submissionCount", assignmentSubmissions.size());
-                        weakPoint.put("assignmentId", assignmentId);
+                        WeakPointVO weakPoint = new WeakPointVO();
+                        weakPoint.setSubject(assignment.getSubject());
+                        weakPoint.setTitle(assignment.getTitle());
+                        weakPoint.setAvgScore(Math.round(avgGrade * 10) / 10.0);
+                        weakPoint.setSubmissionCount(assignmentSubmissions.size());
+                        weakPoint.setAssignmentId(assignmentId);
                         
                         // 根据平均分给出建议
                         String suggestion;
@@ -306,7 +312,7 @@ public class AnalyticsController {
                         } else {
                             suggestion = "该知识点掌握一般，建议强化练习提高熟练度";
                         }
-                        weakPoint.put("suggestion", suggestion);
+                        weakPoint.setSuggestion(suggestion);
                         
                         weakPoints.add(weakPoint);
                         System.out.println("✅ 已添加到薄弱知识点列表");
@@ -323,17 +329,14 @@ public class AnalyticsController {
         }
         
         // 按平均分从低到高排序
-        weakPoints.sort((a, b) -> Double.compare(
-                (Double) a.get("avgScore"), 
-                (Double) b.get("avgScore")
-        ));
+        weakPoints.sort((a, b) -> Double.compare(a.getAvgScore(), b.getAvgScore()));
         
         System.out.println("============ 薄弱知识点分析完成 ============");
         System.out.println("最终识别到的薄弱知识点数量: " + weakPoints.size());
         if (weakPoints.size() > 0) {
             System.out.println("薄弱知识点列表:");
-            for (Map<String, Object> wp : weakPoints) {
-                System.out.println("  - " + wp.get("subject") + " - " + wp.get("title") + " (平均分: " + wp.get("avgScore") + ")");
+            for (WeakPointVO wp : weakPoints) {
+                System.out.println("  - " + wp.getSubject() + " - " + wp.getTitle() + " (平均分: " + wp.getAvgScore() + ")");
             }
         }
         System.out.println("==========================================");

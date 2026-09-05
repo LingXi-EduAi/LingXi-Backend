@@ -83,30 +83,43 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
         if (task == null || !AiTaskStatus.CREATED.equals(task.getStatus())) {
             return;
         }
-        AiSubtask subtask = firstSubtask(taskId);
-        String subtaskId = subtask == null ? null : subtask.getId();
+        List<AiSubtask> subtasks = subtaskMapper.findByTaskId(taskId);
+        if (subtasks.isEmpty()) {
+            return;
+        }
         AiTaskCreateRequest request;
         try {
             request = objectMapper.readValue(task.getRequestJson(), AiTaskCreateRequest.class);
         } catch (Exception exception) {
-            fail(taskId, subtaskId, "INVALID_REQUEST", "AI 任务请求无法读取", exception);
+            fail(taskId, null, "INVALID_REQUEST", "AI 任务请求无法读取", exception);
             return;
         }
 
         DifyEventAdapter.Context context = eventAdapter.createContext(taskId, task.getConversationId());
         try {
-            record(subtaskId, taskId, eventAdapter.taskStarted(context, request.getQuery()),
+            record(null, taskId, eventAdapter.taskStarted(context, request.getQuery()),
                     "lingxi:task_started", null, null, null);
-            record(subtaskId, taskId, simpleEvent(context, LingXiEventType.TASK_DECOMPOSED, "RUNNING",
-                    singleton("taskType", request.getTaskType())), "lingxi:task_decomposed", null, null, null);
-            record(subtaskId, taskId, simpleEvent(context, LingXiEventType.AGENT_ASSIGNED, "RUNNING",
-                    singleton("agentType", request.getTaskType())), "lingxi:agent_assigned", null, null, null);
+            // BE-04: emit real TASK_DECOMPOSED + AGENT_ASSIGNED for EVERY subtask,
+            // carrying that subtask's actual id and agentType, in dependency order.
+            for (AiSubtask subtask : subtasks) {
+                record(subtask.getId(), taskId,
+                        simpleEvent(context, LingXiEventType.TASK_DECOMPOSED, "RUNNING",
+                                singleton("taskType", subtask.getAgentType())),
+                        "lingxi:task_decomposed", null, null, null);
+                record(subtask.getId(), taskId,
+                        simpleEvent(context, LingXiEventType.AGENT_ASSIGNED, "RUNNING",
+                                singleton("agentType", subtask.getAgentType())),
+                        "lingxi:agent_assigned", null, null, null);
+            }
         } catch (RuntimeException exception) {
-            fail(taskId, subtaskId, "PERSISTENCE_ERROR", "AI 任务初始化失败", exception);
+            fail(taskId, null, "PERSISTENCE_ERROR", "AI 任务初始化失败", exception);
             return;
         }
 
-        startAgent(task, subtaskId, context, request);
+        // Intermediate limitation (BE-04): the Dify stream pipeline still runs once for
+        // the first subtask. Full per-subtask sequential execution is a later iteration.
+        AiSubtask first = subtasks.get(0);
+        startAgent(task, first.getId(), context, request);
     }
 
     @Override
@@ -422,11 +435,6 @@ public class AiTaskExecutionServiceImpl implements AiTaskExecutionService {
         DifyEventAdapter.Context context = eventAdapter.createContext(taskId, null);
         LingXiEvent event = eventAdapter.streamError(context, code, message, false);
         record(subtaskId, taskId, event, "lingxi:setup_error", null, code, message);
-    }
-
-    private AiSubtask firstSubtask(String taskId) {
-        java.util.List<AiSubtask> subtasks = subtaskMapper.findByTaskId(taskId);
-        return subtasks.isEmpty() ? null : subtasks.get(0);
     }
 
     private void updateExternalIds(String taskId, JsonNode source) {

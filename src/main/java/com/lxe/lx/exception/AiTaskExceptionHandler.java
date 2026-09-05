@@ -1,5 +1,9 @@
-package com.lxe.lx.controller;
+package com.lxe.lx.exception;
 
+import com.lxe.lx.controller.AiConversationController;
+import com.lxe.lx.controller.AiModelCallLogController;
+import com.lxe.lx.controller.AiTaskController;
+import com.lxe.lx.controller.AiUploadController;
 import com.lxe.lx.domain.dto.AiApiResponse;
 import com.lxe.lx.service.AiTaskApiException;
 import org.springframework.http.ResponseEntity;

@@ -7,6 +7,7 @@ import com.lxe.lx.domain.dto.ValidDTO;
 import com.lxe.lx.domain.qo.HomeworkSubmissionQO;
 import com.lxe.lx.pojo.HomeworkSubmission;
 import com.lxe.lx.pojo.TokenEntity;
+import com.lxe.lx.service.AiGradingService;
 import com.lxe.lx.service.HomeworkSubmissionService;
 import com.lxe.lx.util.ResultConstant;
 import com.lxe.lx.util.Tools;
@@ -14,6 +15,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -31,6 +34,13 @@ public class HomeworkSubmissionController {
 
     @Autowired
     private HomeworkSubmissionService homeworkSubmissionService;
+
+    @Autowired
+    private AiGradingService aiGradingService;
+
+    @Autowired
+    @Qualifier("aiTaskExecutor")
+    private TaskExecutor aiTaskExecutor;
 
     /**
      * 学生提交作业
@@ -144,6 +154,10 @@ public class HomeworkSubmissionController {
             submission.setUpdateTime(Tools.nowTimeStr());
             
             ResultConstant ref = homeworkSubmissionService.gradeHomework(submission);
+            // BE-06 AI 批改增强：手动批改成功后，异步触发 AI 批改（best-effort，失败不影响主流程）
+            if (ref.getStatus() == ResultConstant.SUCCESS) {
+                aiTaskExecutor.execute(() -> aiGradingService.grade(submission));
+            }
             return ref;
         } catch (Exception e) {
             e.printStackTrace();

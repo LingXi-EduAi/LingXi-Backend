@@ -5,11 +5,19 @@ import com.lxe.lx.annotation.Login;
 import com.lxe.lx.annotation.TeacherOnly;
 import com.lxe.lx.domain.dto.AiApiResponse;
 import com.lxe.lx.domain.dto.AiModelCallLogPage;
+import com.lxe.lx.domain.dto.ClassModelUsage;
+import com.lxe.lx.domain.dto.StudentUsageDTO;
 import com.lxe.lx.domain.qo.AiModelCallLogQuery;
+import com.lxe.lx.domain.qo.CustomerQO;
 import com.lxe.lx.pojo.AiModelCallLog;
+import com.lxe.lx.pojo.Customer;
+import com.lxe.lx.pojo.LXClass;
+import com.lxe.lx.pojo.StudentModelUsage;
 import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.service.AiModelCallLogService;
 import com.lxe.lx.service.AiTaskApiException;
+import com.lxe.lx.service.CustomerService;
+import com.lxe.lx.service.LXClassService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -24,7 +32,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
@@ -35,10 +46,61 @@ import static com.lxe.lx.config.AuthorizationInterceptor.ORG_ID_KEY;
 public class AiModelCallLogController {
     private final AiModelCallLogService service;
     private final ObjectMapper objectMapper;
+    private final CustomerService customerService;
+    private final LXClassService lxClassService;
 
-    public AiModelCallLogController(AiModelCallLogService service, ObjectMapper objectMapper) {
+    public AiModelCallLogController(AiModelCallLogService service, ObjectMapper objectMapper,
+                                    CustomerService customerService, LXClassService lxClassService) {
         this.service = service;
         this.objectMapper = objectMapper;
+        this.customerService = customerService;
+        this.lxClassService = lxClassService;
+    }
+
+    @Login
+    @GetMapping("/usage-by-class")
+    public AiApiResponse<ClassModelUsage> usageByClass(
+            HttpServletRequest request,
+            @RequestParam String classId) {
+        if (StringUtils.isBlank(classId)) {
+            throw new AiTaskApiException(400, "班级不能为空");
+        }
+        List<Customer> students = studentsOfClass(classId);
+        List<StudentModelUsage> usages = service.aggregateByStudentClass(classId);
+        Map<String, StudentModelUsage> usageByUser = new HashMap<>();
+        for (StudentModelUsage u : usages) {
+            usageByUser.put(u.getUserId(), u);
+        }
+        ClassModelUsage result = new ClassModelUsage();
+        result.setClassId(classId);
+        result.setClassName(classNameOf(classId));
+        result.setStudentCount(students.size());
+        result.setActiveStudentCount(usages.size());
+        long latencyTotal = 0;
+        long latencyCount = 0;
+        for (Customer student : students) {
+            StudentUsageDTO dto = new StudentUsageDTO();
+            dto.setStudentId(student.getId());
+            dto.setStudentName(student.getName());
+            StudentModelUsage usage = usageByUser.get(student.getId());
+            if (usage != null) {
+                dto.setCallCount(usage.getCallCount() == null ? 0 : usage.getCallCount());
+                dto.setTotalTokens(usage.getTotalTokens() == null ? 0 : usage.getTotalTokens());
+                dto.setTotalLatencyMs(usage.getTotalLatencyMs() == null ? 0 : usage.getTotalLatencyMs());
+                dto.setTotalCost(usage.getTotalCost() == null ? BigDecimal.ZERO : usage.getTotalCost());
+                dto.setFailedCount(usage.getFailedCount() == null ? 0 : usage.getFailedCount());
+                long avg = dto.getCallCount() == 0 ? 0 : dto.getTotalLatencyMs() / dto.getCallCount();
+                dto.setAverageLatencyMs(avg);
+                result.setTotalTokens(result.getTotalTokens() + dto.getTotalTokens());
+                result.setTotalCost(result.getTotalCost().add(dto.getTotalCost()));
+                result.setFailedCount(result.getFailedCount() + dto.getFailedCount());
+                latencyTotal += dto.getTotalLatencyMs();
+                latencyCount += dto.getCallCount();
+            }
+            result.getStudents().add(dto);
+        }
+        result.setAverageLatencyMs(latencyCount == 0 ? 0 : latencyTotal / latencyCount);
+        return AiApiResponse.success(requestId(), result);
     }
 
     @Login
@@ -173,6 +235,27 @@ public class AiModelCallLogController {
             throw new AiTaskApiException(401, "无法获取当前登录用户");
         }
         return token.getId();
+    }
+
+    private List<Customer> studentsOfClass(String classId) {
+        CustomerQO qo = new CustomerQO();
+        qo.setClassId(classId);
+        qo.setState("2");
+        try {
+            List<Customer> students = customerService.list(qo);
+            return students == null ? new ArrayList<>() : students;
+        } catch (Exception e) {
+            throw new AiTaskApiException(500, "班级学生查询失败");
+        }
+    }
+
+    private String classNameOf(String classId) {
+        try {
+            LXClass lxClass = lxClassService.getLXClassById(classId);
+            return lxClass == null ? null : lxClass.getName();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String requestId() {

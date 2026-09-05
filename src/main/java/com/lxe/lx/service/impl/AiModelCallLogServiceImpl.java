@@ -3,6 +3,7 @@ package com.lxe.lx.service.impl;
 import com.lxe.lx.domain.qo.AiModelCallLogQuery;
 import com.lxe.lx.mapper.AiModelCallLogMapper;
 import com.lxe.lx.pojo.AiModelCallLog;
+import com.lxe.lx.pojo.StudentModelUsage;
 import com.lxe.lx.service.AiModelCallLogService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,5 +66,13 @@ public class AiModelCallLogServiceImpl implements AiModelCallLogService {
     @Override
     public int countByQuery(AiModelCallLogQuery query) {
         return mapper.countByQuery(query);
+    }
+
+    @Override
+    public List<StudentModelUsage> aggregateByStudentClass(String classId) {
+        if (classId == null || classId.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return mapper.aggregateByStudentClass(classId);
     }
 }
