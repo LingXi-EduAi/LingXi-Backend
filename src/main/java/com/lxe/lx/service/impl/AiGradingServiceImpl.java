@@ -51,13 +51,21 @@ public class AiGradingServiceImpl implements AiGradingService {
             return;
         }
         try {
+            // 先重读完整记录：controller 传入的可能是 partial（仅 id/grade/version），
+            // 必须以库中记录为准获取 content/assignmentId/studentId（否则 runWorkflow 会因 user 为空被拒）
+            HomeworkSubmission latest = homeworkSubmissionService.getById(submission.getId());
+            if (latest == null) {
+                logger.warn("AI 批改跳过：提交记录不存在或已删除：submissionId={}", submission.getId());
+                return;
+            }
+
             // 构建 Workflow 输入（content + assignmentId）
             Map<String, Object> inputs = new LinkedHashMap<>();
-            inputs.put("content", StringUtils.defaultString(submission.getContent()));
-            inputs.put("assignmentId", StringUtils.defaultString(submission.getAssignmentId()));
+            inputs.put("content", StringUtils.defaultString(latest.getContent()));
+            inputs.put("assignmentId", StringUtils.defaultString(latest.getAssignmentId()));
 
             // 阻塞调用 Dify Workflow 获取批改结果
-            JsonNode result = difyGateway.runWorkflow(inputs, submission.getStudentId());
+            JsonNode result = difyGateway.runWorkflow(inputs, latest.getStudentId());
 
             // 解析批改结果：Dify Workflow 阻塞响应结构为 data.outputs
             JsonNode outputs = result.path("data").path("outputs");
@@ -68,12 +76,6 @@ public class AiGradingServiceImpl implements AiGradingService {
                 return;
             }
 
-            // 重新读取最新记录，避免与手动批改的版本号冲突（gradeHomework 按 version 乐观锁更新）
-            HomeworkSubmission latest = homeworkSubmissionService.getById(submission.getId());
-            if (latest == null) {
-                logger.warn("AI 批改跳过：提交记录不存在或已删除：submissionId={}", submission.getId());
-                return;
-            }
             latest.setGrade(aiGrade);
             latest.setFeedback(aiFeedback);
             homeworkSubmissionService.gradeHomework(latest);
