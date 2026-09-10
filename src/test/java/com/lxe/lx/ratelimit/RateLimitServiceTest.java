@@ -1,11 +1,7 @@
 package com.lxe.lx.ratelimit;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -78,13 +74,9 @@ class RateLimitServiceTest {
     // ===== RedisRateLimitCounter（mock RedisTemplate） =====
 
     private RedisTemplate<String, Object> redisTemplate;
-    private ValueOperations<String, Object> valueOps;
-
     private RateLimitService redisService(long firstCount) {
         redisTemplate = mock(RedisTemplate.class);
-        valueOps = mock(ValueOperations.class);
-        when(redisTemplate.opsForValue()).thenReturn(valueOps);
-        when(valueOps.increment("ratelimit:user-1:/api/ai/tasks")).thenReturn(firstCount);
+        when(redisTemplate.execute(any(), any(), any())).thenReturn(firstCount);
         return new RateLimitService(new RedisRateLimitCounter(redisTemplate));
     }
 
@@ -94,7 +86,7 @@ class RateLimitServiceTest {
 
         assertTrue(redisService.tryAcquire("user-1", "/api/ai/tasks", 2, 60));
 
-        verify(redisTemplate).expire("ratelimit:user-1:/api/ai/tasks", 60, TimeUnit.SECONDS);
+        verify(redisTemplate).execute(any(), any(), any());
     }
 
     @Test
@@ -103,7 +95,7 @@ class RateLimitServiceTest {
 
         assertTrue(redisService.tryAcquire("user-1", "/api/ai/tasks", 2, 60));
 
-        verify(redisTemplate, never()).expire(any(), anyLong(), any());
+        verify(redisTemplate).execute(any(), any(), any());
     }
 
     @Test
@@ -117,21 +109,20 @@ class RateLimitServiceTest {
     void redisKeyUsesRatelimitPrefixWithUserAndPath() {
         redisService(1L).tryAcquire("user-1", "/api/ai/tasks", 2, 60);
 
-        ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
-        verify(valueOps).increment(keyCaptor.capture());
-        assertEquals("ratelimit:user-1:/api/ai/tasks", keyCaptor.getValue());
+        verify(redisTemplate).execute(any(),
+                org.mockito.ArgumentMatchers.eq(java.util.Collections.singletonList(
+                        "ratelimit:user-1:/api/ai/tasks")),
+                org.mockito.ArgumentMatchers.eq("60"));
     }
 
     @Test
     void redisNullIncrementResultCountsAsZero() {
         redisTemplate = mock(RedisTemplate.class);
-        valueOps = mock(ValueOperations.class);
-        when(redisTemplate.opsForValue()).thenReturn(valueOps);
-        when(valueOps.increment(any())).thenReturn(null);
+        when(redisTemplate.execute(any(), any(), any())).thenReturn(null);
         RedisRateLimitCounter redisCounter = new RedisRateLimitCounter(redisTemplate);
 
         assertEquals(0L, redisCounter.incrementAndGet("ratelimit:user-1:/api/ai/tasks", 60));
 
-        verify(redisTemplate, never()).expire(any(), anyLong(), any());
+        verify(redisTemplate).execute(any(), any(), any());
     }
 }

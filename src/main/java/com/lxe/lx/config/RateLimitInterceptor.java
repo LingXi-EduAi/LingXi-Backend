@@ -5,6 +5,7 @@ import com.lxe.lx.annotation.RateLimit;
 import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.ratelimit.RateLimitService;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -27,9 +28,12 @@ import java.util.UUID;
 public class RateLimitInterceptor implements HandlerInterceptor {
 
     private final RateLimitService rateLimitService;
+    private final int defaultLimit;
 
-    public RateLimitInterceptor(RateLimitService rateLimitService) {
+    public RateLimitInterceptor(RateLimitService rateLimitService,
+                                @Value("${ai.privacy.rate-limit-per-minute:60}") int defaultLimit) {
         this.rateLimitService = rateLimitService;
+        this.defaultLimit = defaultLimit;
     }
 
     @Override
@@ -50,17 +54,20 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             userId = ((TokenEntity) attr).getId();
         }
 
+        int limit = rateLimit.limit() > 0 ? rateLimit.limit() : defaultLimit;
+        long windowSeconds = rateLimit.windowSeconds();
         boolean allowed = rateLimitService.tryAcquire(
-                userId, request.getRequestURI(), rateLimit.limit(), rateLimit.windowSeconds());
+                userId, request.getRequestURI(), limit, windowSeconds);
         if (allowed) {
             return true;
         }
-        sendTooManyRequests(response);
+        sendTooManyRequests(response, windowSeconds);
         return false;
     }
 
-    private void sendTooManyRequests(HttpServletResponse response) throws Exception {
+    private void sendTooManyRequests(HttpServletResponse response, long windowSeconds) throws Exception {
         response.setStatus(429);
+        response.setHeader("Retry-After", String.valueOf(Math.max(1L, windowSeconds)));
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=utf-8");
         Map<String, Object> body = new LinkedHashMap<>();

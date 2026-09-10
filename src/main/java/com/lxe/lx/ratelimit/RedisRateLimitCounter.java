@@ -1,9 +1,8 @@
 package com.lxe.lx.ratelimit;
 
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * 基于 Redis 的限流计数实现。
@@ -14,6 +13,12 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RedisRateLimitCounter implements RateLimitCounter {
 
+    private static final DefaultRedisScript<Long> INCREMENT_SCRIPT = new DefaultRedisScript<>(
+            "local count = redis.call('INCR', KEYS[1]); "
+                    + "if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end; "
+                    + "return count;",
+            Long.class);
+
     private final RedisTemplate<String, Object> redisTemplate;
 
     public RedisRateLimitCounter(RedisTemplate<String, Object> redisTemplate) {
@@ -22,10 +27,10 @@ public class RedisRateLimitCounter implements RateLimitCounter {
 
     @Override
     public long incrementAndGet(String key, long windowSeconds) {
-        Long count = redisTemplate.opsForValue().increment(key);
-        if (count != null && count == 1L) {
-            redisTemplate.expire(key, windowSeconds, TimeUnit.SECONDS);
-        }
+        Long count = redisTemplate.execute(
+                INCREMENT_SCRIPT,
+                java.util.Collections.singletonList(key),
+                String.valueOf(windowSeconds));
         return count == null ? 0L : count;
     }
 }

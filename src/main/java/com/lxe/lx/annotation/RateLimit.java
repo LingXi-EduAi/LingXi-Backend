@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
 public @interface RateLimit {
 
     /** 窗口内允许的最大请求数。 */
-    int limit() default 60;
+    int limit() default -1;
 
     /** 窗口秒数。 */
     long windowSeconds() default 60L;
