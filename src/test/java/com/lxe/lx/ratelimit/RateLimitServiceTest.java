@@ -1,7 +1,7 @@
 package com.lxe.lx.ratelimit;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -73,9 +73,9 @@ class RateLimitServiceTest {
 
     // ===== RedisRateLimitCounter（mock RedisTemplate） =====
 
-    private RedisTemplate<String, Object> redisTemplate;
+    private StringRedisTemplate redisTemplate;
     private RateLimitService redisService(long firstCount) {
-        redisTemplate = mock(RedisTemplate.class);
+        redisTemplate = mock(StringRedisTemplate.class);
         when(redisTemplate.execute(any(), any(), any())).thenReturn(firstCount);
         return new RateLimitService(new RedisRateLimitCounter(redisTemplate));
     }
@@ -117,7 +117,7 @@ class RateLimitServiceTest {
 
     @Test
     void redisNullIncrementResultCountsAsZero() {
-        redisTemplate = mock(RedisTemplate.class);
+        redisTemplate = mock(StringRedisTemplate.class);
         when(redisTemplate.execute(any(), any(), any())).thenReturn(null);
         RedisRateLimitCounter redisCounter = new RedisRateLimitCounter(redisTemplate);
 

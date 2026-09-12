@@ -1,6 +1,6 @@
 package com.lxe.lx.ratelimit;
 
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
  *
  * <p>使用 INCR + EXPIRE 实现固定窗口计数：首次访问设置窗口过期时间，
  * 窗口内每次访问自增，窗口结束后 key 自动过期重新计数。
+ *
+ * <p>必须使用 {@link StringRedisTemplate}：通用 RedisTemplate 的 JSON 值序列化器
+ * 会把脚本参数序列化成带引号的字符串（如 {@code "60"}），导致 {@code EXPIRE} 报
+ * {@code ERR value is not an integer or out of range}。
  */
 @Component
 public class RedisRateLimitCounter implements RateLimitCounter {
@@ -19,9 +23,9 @@ public class RedisRateLimitCounter implements RateLimitCounter {
                     + "return count;",
             Long.class);
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
 
-    public RedisRateLimitCounter(RedisTemplate<String, Object> redisTemplate) {
+    public RedisRateLimitCounter(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
