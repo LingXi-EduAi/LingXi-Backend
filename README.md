@@ -1,8 +1,8 @@
 # 灵犀教育后端（LingXi Backend）
 
-更新日期：2026-07-20
+更新日期：2026-09-12
 
-灵犀教育后端基于 Spring Boot、MyBatis、MySQL 和 Redis，负责用户认证、班级与作业等业务，并作为前端访问 Dify Chatflow 和 Workflow 的统一中转层。
+灵犀教育后端基于 Spring Boot、MyBatis、MySQL 和 Redis，负责用户认证、班级与作业等业务、多智能体 AI 任务链路（任务/事件/SSE/会话/证据/模型日志/反馈/隐私），并作为前端访问 Dify Chatflow 和 Workflow 的统一中转层。
 
 ```text
 LingXi-Frontend
@@ -18,7 +18,7 @@ LingXi-Frontend
 
 | 组件 | 版本或说明 |
 |---|---|
-| Java | 代码目标版本 1.8 |
+| Java | 目标字节码 1.8；运行/测试推荐 JDK 8/11/17（21/23 未经验证） |
 | Spring Boot | 2.6.13 |
 | MyBatis | 3.4.6 |
 | MySQL | 8.0+ |
@@ -31,15 +31,23 @@ LingXi-Frontend
 ```text
 LingXi-Backend/
 ├── src/main/java/com/lxe/lx/
-│   ├── config/          # 数据源、Redis、鉴权和跨域配置
-│   ├── controller/      # HTTP 接口
-│   ├── domain/          # DTO、QO
+│   ├── annotation/      # @Login / @TeacherOnly / @RateLimit
+│   ├── config/          # 数据源、Redis、鉴权、审计、限流、跨域
+│   ├── controller/      # HTTP 接口（业务 + /api/ai/**）
+│   ├── domain/          # DTO、QO、VO、LingXiEvent
+│   ├── exception/       # AI 接口统一异常处理
+│   ├── gateway/         # DifyGateway、DifyEventAdapter、AiAgentRouter
 │   ├── mapper/          # MyBatis Mapper 接口
-│   ├── pojo/            # 业务实体
-│   └── service/         # 业务与 Dify 中转服务
+│   ├── pojo/            # 业务与 AI 实体
+│   ├── ratelimit/       # Redis / 内存限流计数
+│   ├── service/         # 业务、AI 任务、会话、反馈、隐私、Dify 中转
+│   └── util/            # 工具（含 PII 脱敏）
 ├── src/main/resources/
 │   ├── application.properties
+│   ├── logback-spring.xml   # 日志 PII 脱敏
 │   └── mybatis/         # MyBatis XML
+├── sql/migrations/      # AI 表版本化迁移（up/down/verify）
+├── sql/seed/            # 演示种子数据（DEMO 前缀，幂等）
 ├── lx.sql               # 11 张基础表
 ├── lx_add.sql           # 2 张作业表及演示数据
 ├── .env.example         # 环境变量模板
@@ -123,7 +131,7 @@ mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> 
 
 空白环境只执行 `lx_add.sql` 前面的两个 `CREATE TABLE`，不要执行后续 `INSERT INTO`。
 
-初始化完成后应有 13 张表：
+初始化完成后应有 13 张业务表：
 
 ```text
 lx_class
@@ -141,9 +149,41 @@ lx_study_group_message
 lx_token
 ```
 
+## 初始化 AI 表与演示数据
+
+AI 表通过 `sql/migrations` 下的版本化脚本创建，按文件名时间顺序执行 `up`，再执行对应的 `verify`：
+
+```bash
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < sql/migrations/20260809_be08_ai_tables_up.sql
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < sql/migrations/20260824_be11_ai_conversation_up.sql
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < sql/migrations/20260828_be10gaps_up.sql
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < sql/migrations/20260828_be12_ai_config_up.sql
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < sql/migrations/20260828_be14_privacy_audit_up.sql
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < sql/migrations/20260904_be01_version_type_up.sql
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < sql/migrations/20260905_be01_conversation_version_up.sql
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < sql/migrations/20260912_be15_ai_feedback_up.sql
+# 每个 *_up.sql 都有对应 *_verify.sql，执行后核对表和索引
+```
+
+导入演示数据（幂等，可重复执行；只操作 `DEMO` 前缀数据，供模型日志 / 学情 / 轨迹回放使用）：
+
+```bash
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < sql/seed/demo_ai_data.sql
+```
+
+AI 表共 10 张：`ai_task`、`ai_subtask`、`ai_event`、`ai_message`、`ai_evidence`、`ai_model_call_log`、`ai_conversation`、`ai_config`、`ai_audit_log`、`ai_feedback`。
+
 ## 启动 Redis
 
 Redis 用于保存登录 Token。Redis 未运行时，受保护接口无法完成鉴权。
+
+### Windows 原生（推荐，稳定）
+
+```powershell
+winget install --id Redis.Redis -e
+Start-Process "C:\Program Files\Redis\redis-server.exe" "C:\Program Files\Redis\redis.windows.conf"
+& "C:\Program Files\Redis\redis-cli.exe" ping
+```
 
 ### Windows + WSL Ubuntu
 
@@ -153,6 +193,8 @@ sudo apt install redis-server -y
 sudo service redis-server start
 redis-cli ping
 ```
+
+> WSL2 的 `localhost` 转发在部分机器上不稳定；若后端偶发 `Redis command timed out`，改用上面的原生 Redis。
 
 ### macOS
 
@@ -408,6 +450,37 @@ token: <登录Token>
 
 浏览器前端不得直接持有 Dify API Key。当前前端若要上传本地文件，应先补充专用的后端文件上传中转接口；现有 Workflow 运行接口只接收 JSON。
 
+## AI 任务链路与接口
+
+新 AI 主链路统一走 `/api/ai/**`，请求头携带 `token`，响应结构为 `{status,msg,requestId,data}`。前端不直接访问 Dify，由后端 `DifyGateway` 中转并将 Dify 事件转换为 [LingXiEvent v1](docs/接口与协议/LingXiEvent协议-v1.md) 后经 SSE 推送。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/api/ai/tasks` | 创建任务（`taskType=CHATFLOW/WORKFLOW`，可带 `conversationId` 继续会话） |
+| GET | `/api/ai/tasks/{taskId}` | 任务快照（状态、结果、子任务） |
+| GET | `/api/ai/tasks/{taskId}/events` | 订阅 SSE，支持 `Last-Event-ID: {taskId}:{sequence}` 断线续传 |
+| POST | `/api/ai/tasks/{taskId}/stop` | 停止运行中任务 |
+| POST | `/api/ai/tasks/{taskId}/subtasks/{subtaskId}/retry` | 重试失败子任务 |
+| GET | `/api/ai/tasks/{taskId}/feedback` | 个性化反馈（薄弱点 + 推荐练习；优先消费 `validation_finished`，否则本地规则） |
+| GET/PATCH/DELETE | `/api/ai/conversations...` | 会话列表、消息历史、重命名、软删除、继续对话 |
+| GET | `/api/ai/model-calls`、`/api/ai/model-calls/export` | 模型调用日志查询与 CSV/JSON 导出（教师） |
+| GET | `/api/ai/model-calls/usage-by-class` | 班级/学生用量聚合（教师） |
+| GET/POST | `/api/ai/configs` | Dify 应用配置版本管理（教师） |
+| POST/DELETE | `/api/ai/privacy/*` | 保留期清理、按会话/任务删除 |
+| POST | `/api/ai/upload` | 本地文件上传 |
+
+相关环境变量（`.env`，均有默认值）：`AI_SSE_TIMEOUT_MS`、`AI_SSE_HEARTBEAT_MS`、`AI_TASK_EXECUTOR_*`、`AI_TASK_RECOVERY_ENABLED`、`AI_SUBTASK_MAX_RETRIES`、`AI_MODEL_LOG_EXECUTOR_*`、`AI_PRIVACY_RETENTION_DAYS`、`AI_PRIVACY_RATE_LIMIT_PER_MINUTE`、`AI_AGENT_ROUTE_*`、`AI_GRADING_ENABLED`。
+
+本地一键演示的启动顺序、账号与验收清单见 [本地演示启动说明](docs/部署与联调/本地演示启动说明.md)。
+
+## 运行测试
+
+```powershell
+mvn -o clean test
+```
+
+测试为纯 JUnit 5 + Mockito（不依赖 MySQL/Redis/Dify）。当前为 201 项通过、0 失败、1 跳过。
+
 ## 测试脚本
 
 测试 Chatflow：
@@ -430,8 +503,14 @@ token: <登录Token>
 ## 相关文档
 
 - [完整文档索引](docs/README.md)
+- [当前基线与协作分工](docs/当前基线与协作分工.md)
+- [本地演示启动说明](docs/部署与联调/本地演示启动说明.md)
+- [AI 任务接口契约 v1](docs/接口与协议/AI任务接口契约-v1.md)
+- [LingXiEvent 协议 v1](docs/接口与协议/LingXiEvent协议-v1.md)
+- [隐私保护说明](docs/交付材料/报告与PPT/隐私保护说明.md)
 - [后端部署方案](docs/部署与联调/后端部署方案.md)
 - [Dify 连接测试](docs/部署与联调/dify连接测试.md)
+- [更新日志（2026-09）](docs/交接与记录/更新日志（2026-09）.md)
 - [更新总结](docs/交接与记录/更新总结.md)
 - `.env.example`
 
