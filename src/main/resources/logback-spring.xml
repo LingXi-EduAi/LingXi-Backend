@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BE-14-1: 日志脱敏配置。
+  %maskedMsg 使用 LogbackPrivacyConverter 对日志正文中的手机号/身份证/邮箱做掩码，
+  其余控制台格式与 Spring Boot 默认保持一致。
+-->
+<configuration>
+    <conversionRule conversionWord="maskedMsg"
+                    converterClass="com.lxe.lx.util.LogbackPrivacyConverter"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger - %maskedMsg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

@@ -18,6 +18,7 @@ import com.lxe.lx.service.AiModelCallLogService;
 import com.lxe.lx.service.AiTaskApiException;
 import com.lxe.lx.service.CustomerService;
 import com.lxe.lx.service.LXClassService;
+import com.lxe.lx.util.PrivacyTextSanitizer;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -134,7 +135,7 @@ public class AiModelCallLogController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                     LocalDateTime endAt) {
         AiModelCallLogQuery query = query(request, taskId, nodeName, startAt, endAt, 1, 1);
-        List<AiModelCallLog> logs = service.findAllByQuery(query);
+        List<AiModelCallLog> logs = sanitized(service.findAllByQuery(query));
         byte[] body;
         String contentType;
         String extension;
@@ -227,6 +228,26 @@ public class AiModelCallLogController {
         }
         String text = String.valueOf(value).replace("\"", "\"\"");
         return text.contains(",") || text.contains("\n") ? "\"" + text + "\"" : text;
+    }
+
+    /** BE-14-1: 导出前对文本字段做 PII 脱敏，确保导出文件不含原始手机号/邮箱/身份证。 */
+    private List<AiModelCallLog> sanitized(List<AiModelCallLog> logs) {
+        List<AiModelCallLog> result = new ArrayList<>(logs.size());
+        for (AiModelCallLog log : logs) {
+            AiModelCallLog copy = new AiModelCallLog();
+            copy.setId(log.getId());
+            copy.setTaskId(log.getTaskId());
+            copy.setUserId(log.getUserId());
+            copy.setNodeName(PrivacyTextSanitizer.sanitize(log.getNodeName()));
+            copy.setModel(PrivacyTextSanitizer.sanitize(log.getModel()));
+            copy.setTotalTokens(log.getTotalTokens());
+            copy.setLatencyMs(log.getLatencyMs());
+            copy.setCost(log.getCost());
+            copy.setErrorCode(PrivacyTextSanitizer.sanitize(log.getErrorCode()));
+            copy.setCreatedAt(log.getCreatedAt());
+            result.add(copy);
+        }
+        return result;
     }
 
     private String currentUserId(HttpServletRequest request) {

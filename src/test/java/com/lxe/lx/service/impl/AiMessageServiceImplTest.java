@@ -78,6 +78,19 @@ class AiMessageServiceImplTest {
     }
 
     @Test
+    void saveAssistantErrorMasksPii() {
+        when(mapper.findByTaskAndRole("task-1", "assistant")).thenReturn(null);
+
+        AiMessage saved = service.saveAssistantError(
+                "conversation-1", "task-1", "UPSTREAM_ERROR",
+                "联系 13800138000 或 zhangsan@example.com 处理", "message-1");
+
+        assertEquals("联系 138****8000 或 zh***@example.com 处理", saved.getContent());
+        assertEquals("联系 138****8000 或 zh***@example.com 处理", saved.getErrorMessage());
+        verify(mapper).insert(saved);
+    }
+
+    @Test
     void rejectsBlankContentAndInvalidPage() {
         assertEquals(null, service.saveUserQuestion("conversation-1", "task-1", " "));
         assertTrue(service.getMessagesByConversation("conversation-1", 0, 20).isEmpty());

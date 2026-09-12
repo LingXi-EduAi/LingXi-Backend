@@ -3,6 +3,7 @@ package com.lxe.lx.service.impl;
 import com.lxe.lx.mapper.AiMessageMapper;
 import com.lxe.lx.pojo.AiMessage;
 import com.lxe.lx.service.AiMessageService;
+import com.lxe.lx.util.PrivacyTextSanitizer;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -86,11 +87,13 @@ public class AiMessageServiceImpl implements AiMessageService {
         if (existing != null) {
             return existing;
         }
+        // BE-14-1: 错误信息可能来自上游，落库前对 PII 脱敏。
+        String safeError = PrivacyTextSanitizer.sanitize(errorMessage);
         AiMessage message = newMessage(conversationId, taskId, "assistant",
-                StringUtils.defaultString(errorMessage), difyMessageId);
+                StringUtils.defaultString(safeError), difyMessageId);
         message.setStatus("FAILED");
         message.setErrorCode(errorCode);
-        message.setErrorMessage(errorMessage);
+        message.setErrorMessage(safeError);
         messageMapper.insert(message);
         return message;
     }
