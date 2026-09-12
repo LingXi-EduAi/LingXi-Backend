@@ -23,6 +23,12 @@ public interface AiEventMapper {
             @Param("sequence") long sequence
     );
 
+    /** 查询任务下指定类型的最新一条事件，用于反思等后置处理。 */
+    AiEvent findLatestByTaskAndType(
+            @Param("taskId") String taskId,
+            @Param("eventType") String eventType
+    );
+
     /** 删除创建时间早于 cutoff 的事件，返回删除行数。 */
     int deleteOlderThan(@Param("cutoff") LocalDateTime cutoff);
 

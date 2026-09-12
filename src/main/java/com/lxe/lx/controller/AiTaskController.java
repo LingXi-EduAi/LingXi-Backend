@@ -7,10 +7,12 @@ import com.lxe.lx.domain.dto.AiTaskResponse;
 import com.lxe.lx.domain.dto.AiApiResponse;
 import com.lxe.lx.domain.dto.AiTaskCreateRequest;
 import com.lxe.lx.domain.dto.AiTaskCreateResponse;
+import com.lxe.lx.domain.dto.AiFeedbackView;
 import com.lxe.lx.gateway.DifyGatewayException;
 import com.lxe.lx.pojo.TokenEntity;
 import com.lxe.lx.service.AiTaskService;
 import com.lxe.lx.service.AiTaskControlService;
+import com.lxe.lx.service.AiFeedbackService;
 import com.lxe.lx.domain.dto.AiTaskSnapshot;
 import com.lxe.lx.util.ResultConstant;
 import org.apache.commons.lang3.StringUtils;
@@ -42,10 +44,13 @@ public class AiTaskController {
 
     private final AiTaskService aiTaskService;
     private final AiTaskControlService controlService;
+    private final AiFeedbackService feedbackService;
 
-    public AiTaskController(AiTaskService aiTaskService, AiTaskControlService controlService) {
+    public AiTaskController(AiTaskService aiTaskService, AiTaskControlService controlService,
+                            AiFeedbackService feedbackService) {
         this.aiTaskService = aiTaskService;
         this.controlService = controlService;
+        this.feedbackService = feedbackService;
     }
 
     @Login
@@ -67,6 +72,15 @@ public class AiTaskController {
         response.setHeader("Cache-Control", "no-cache");
         response.setHeader("X-Accel-Buffering", "no");
         return controlService.subscribe(taskId, currentUserId(request), lastEventId);
+    }
+
+    @Login
+    @GetMapping("/tasks/{taskId}/feedback")
+    public AiApiResponse<AiFeedbackView> getFeedback(
+            HttpServletRequest request,
+            @PathVariable String taskId) {
+        return AiApiResponse.success(requestId(),
+                feedbackService.getOrGenerate(taskId, currentUserId(request)));
     }
 
     @Login

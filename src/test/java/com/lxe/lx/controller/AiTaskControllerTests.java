@@ -1,9 +1,11 @@
 package com.lxe.lx.controller;
 
 import com.lxe.lx.domain.dto.AiApiResponse;
+import com.lxe.lx.domain.dto.AiFeedbackView;
 import com.lxe.lx.domain.dto.AiTaskRequest;
 import com.lxe.lx.domain.dto.AiTaskSnapshot;
 import com.lxe.lx.pojo.TokenEntity;
+import com.lxe.lx.service.AiFeedbackService;
 import com.lxe.lx.service.AiTaskControlService;
 import com.lxe.lx.service.AiTaskService;
 import org.junit.jupiter.api.Test;
@@ -30,7 +32,9 @@ import static org.mockito.Mockito.when;
 class AiTaskControllerTests {
     private final AiTaskService taskService = mock(AiTaskService.class);
     private final AiTaskControlService controlService = mock(AiTaskControlService.class);
-    private final AiTaskController controller = new AiTaskController(taskService, controlService);
+    private final AiFeedbackService feedbackService = mock(AiFeedbackService.class);
+    private final AiTaskController controller =
+            new AiTaskController(taskService, controlService, feedbackService);
 
     @Test
     void streamTaskDelegatesToServiceWithUserId() {
@@ -98,6 +102,18 @@ class AiTaskControllerTests {
 
         assertSame(snapshot, response.getData());
         verify(controlService).getSnapshot("task-1", "user-1");
+    }
+
+    @Test
+    void getFeedbackDelegatesToServiceWithUserId() {
+        HttpServletRequest request = request("user-1");
+        AiFeedbackView view = new AiFeedbackView();
+        when(feedbackService.getOrGenerate("task-1", "user-1")).thenReturn(view);
+
+        AiApiResponse<AiFeedbackView> response = controller.getFeedback(request, "task-1");
+
+        assertSame(view, response.getData());
+        verify(feedbackService).getOrGenerate("task-1", "user-1");
     }
 
     private HttpServletRequest request(String userId) {

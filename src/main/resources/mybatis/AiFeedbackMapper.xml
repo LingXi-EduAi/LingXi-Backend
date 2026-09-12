@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lxe.lx.mapper.AiFeedbackMapper">
+    <resultMap id="AiFeedbackMap" type="com.lxe.lx.pojo.AiFeedback">
+        <id column="id" property="id"/>
+        <result column="task_id" property="taskId"/>
+        <result column="conversation_id" property="conversationId"/>
+        <result column="user_id" property="userId"/>
+        <result column="summary" property="summary"/>
+        <result column="weak_points" property="weakPointsJson"/>
+        <result column="recommendations" property="recommendationsJson"/>
+        <result column="next_step" property="nextStep"/>
+        <result column="source" property="source"/>
+        <result column="raw_payload" property="rawPayloadJson"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.lxe.lx.pojo.AiFeedback">
+        INSERT INTO ai_feedback
+        (id, task_id, conversation_id, user_id, summary, weak_points, recommendations,
+         next_step, source, raw_payload, created_at)
+        VALUES
+        (#{id}, #{taskId}, #{conversationId}, #{userId}, #{summary},
+         CAST(#{weakPointsJson} AS JSON), CAST(#{recommendationsJson} AS JSON),
+         #{nextStep}, #{source}, CAST(#{rawPayloadJson} AS JSON), #{createdAt})
+    </insert>
+
+    <select id="findByTaskId" resultMap="AiFeedbackMap">
+        SELECT * FROM ai_feedback WHERE task_id = #{taskId} LIMIT 1
+    </select>
+
+    <delete id="deleteOlderThan">
+        DELETE FROM ai_feedback WHERE created_at &lt; #{cutoff}
+    </delete>
+
+    <delete id="deleteByTask">
+        DELETE FROM ai_feedback WHERE task_id = #{taskId}
+    </delete>
+
+    <delete id="deleteByConversation">
+        DELETE FROM ai_feedback WHERE conversation_id = #{conversationId}
+    </delete>
+</mapper>

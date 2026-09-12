@@ -4,6 +4,7 @@ import com.lxe.lx.mapper.AiAuditLogMapper;
 import com.lxe.lx.mapper.AiConversationMapper;
 import com.lxe.lx.mapper.AiEventMapper;
 import com.lxe.lx.mapper.AiEvidenceMapper;
+import com.lxe.lx.mapper.AiFeedbackMapper;
 import com.lxe.lx.mapper.AiMessageMapper;
 import com.lxe.lx.mapper.AiModelCallLogMapper;
 import com.lxe.lx.mapper.AiTaskMapper;
@@ -24,6 +25,7 @@ public class AiRetentionServiceImpl implements AiRetentionService {
     private final AiModelCallLogMapper modelCallLogMapper;
     private final AiTaskMapper taskMapper;
     private final AiConversationMapper conversationMapper;
+    private final AiFeedbackMapper feedbackMapper;
 
     public AiRetentionServiceImpl(AiMessageMapper messageMapper,
                                   AiEvidenceMapper evidenceMapper,
@@ -31,7 +33,8 @@ public class AiRetentionServiceImpl implements AiRetentionService {
                                   AiAuditLogMapper auditLogMapper,
                                   AiModelCallLogMapper modelCallLogMapper,
                                   AiTaskMapper taskMapper,
-                                  AiConversationMapper conversationMapper) {
+                                  AiConversationMapper conversationMapper,
+                                  AiFeedbackMapper feedbackMapper) {
         this.messageMapper = messageMapper;
         this.evidenceMapper = evidenceMapper;
         this.eventMapper = eventMapper;
@@ -39,6 +42,7 @@ public class AiRetentionServiceImpl implements AiRetentionService {
         this.modelCallLogMapper = modelCallLogMapper;
         this.taskMapper = taskMapper;
         this.conversationMapper = conversationMapper;
+        this.feedbackMapper = feedbackMapper;
     }
 
     @Override
@@ -51,6 +55,7 @@ public class AiRetentionServiceImpl implements AiRetentionService {
         int events = eventMapper.deleteOlderThan(cutoff);
         int auditLogs = auditLogMapper.deleteOlderThan(cutoff);
         int modelCallLogs = modelCallLogMapper.deleteOlderThan(cutoff);
+        feedbackMapper.deleteOlderThan(cutoff);
         return new PurgeResult(messages, evidences, events, auditLogs, modelCallLogs, 0);
     }
 
@@ -66,6 +71,7 @@ public class AiRetentionServiceImpl implements AiRetentionService {
         int evidences = evidenceMapper.deleteByConversation(conversationId);
         int messages = messageMapper.deleteByConversation(conversationId);
         int tasks = taskMapper.deleteByConversation(conversationId);
+        feedbackMapper.deleteByConversation(conversationId);
         return new PurgeResult(messages, evidences, 0, 0, 0, tasks);
     }
 
@@ -80,6 +86,7 @@ public class AiRetentionServiceImpl implements AiRetentionService {
         }
         int events = eventMapper.deleteByTask(taskId);
         int tasks = taskMapper.deleteByIdAndUser(taskId, userId);
+        feedbackMapper.deleteByTask(taskId);
         return new PurgeResult(0, 0, events, 0, 0, tasks);
     }
 }

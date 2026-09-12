@@ -4,6 +4,7 @@ import com.lxe.lx.mapper.AiAuditLogMapper;
 import com.lxe.lx.mapper.AiConversationMapper;
 import com.lxe.lx.mapper.AiEventMapper;
 import com.lxe.lx.mapper.AiEvidenceMapper;
+import com.lxe.lx.mapper.AiFeedbackMapper;
 import com.lxe.lx.mapper.AiMessageMapper;
 import com.lxe.lx.mapper.AiModelCallLogMapper;
 import com.lxe.lx.mapper.AiTaskMapper;
@@ -30,10 +31,11 @@ class AiRetentionServiceImplTest {
     private final AiModelCallLogMapper modelCallLogMapper = mock(AiModelCallLogMapper.class);
     private final AiTaskMapper taskMapper = mock(AiTaskMapper.class);
     private final AiConversationMapper conversationMapper = mock(AiConversationMapper.class);
+    private final AiFeedbackMapper feedbackMapper = mock(AiFeedbackMapper.class);
 
     private final AiRetentionServiceImpl service = new AiRetentionServiceImpl(
             messageMapper, evidenceMapper, eventMapper, auditLogMapper, modelCallLogMapper, taskMapper,
-            conversationMapper);
+            conversationMapper, feedbackMapper);
 
     @Test
     void purgesAllTablesOlderThanCutoff() {
@@ -57,6 +59,7 @@ class AiRetentionServiceImplTest {
         verify(eventMapper).deleteOlderThan(cutoff);
         verify(auditLogMapper).deleteOlderThan(cutoff);
         verify(modelCallLogMapper).deleteOlderThan(cutoff);
+        verify(feedbackMapper).deleteOlderThan(cutoff);
     }
 
     @Test
@@ -84,6 +87,7 @@ class AiRetentionServiceImplTest {
         verify(evidenceMapper).deleteByConversation("conv-1");
         verify(messageMapper).deleteByConversation("conv-1");
         verify(taskMapper).deleteByConversation("conv-1");
+        verify(feedbackMapper).deleteByConversation("conv-1");
     }
 
     @Test
@@ -100,6 +104,7 @@ class AiRetentionServiceImplTest {
         verify(taskMapper).findByIdAndUser("task-1", "user-1");
         verify(eventMapper).deleteByTask("task-1");
         verify(taskMapper).deleteByIdAndUser("task-1", "user-1");
+        verify(feedbackMapper).deleteByTask("task-1");
     }
 
     @Test
