@@ -37,6 +37,10 @@ final class AiSseSession {
         return emitter;
     }
 
+    boolean isClosed() {
+        return closed.get();
+    }
+
     void attach(DifyStream stream) {
         this.stream = stream;
         if (closed.get()) {

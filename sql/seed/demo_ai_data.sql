@@ -124,80 +124,75 @@ INSERT INTO ai_model_call_log
 ('DEMO-MCL-0017','DEMO-TASK-0006','summarizer','deepseek-chat',320,240,0.003200,NULL,'2026-09-03 20:00:38.000'),
 ('DEMO-MCL-0018','DEMO-TASK-0001','chat-llm','deepseek-chat',520,380,0.005200,NULL,'2026-09-01 08:00:45.000');
 
--- ---------- 8. AI 事件（63 条：展示每任务真实时间线） ----------
--- 任务 1（18 条）、任务 2（15 条）、任务 3（20 条）、任务 4（4 条）、
--- 任务 5（3 条）、任务 6（3 条），事件数合计 63（>=50）。
+-- ---------- 8. AI 事件（56 条：展示每任务真实时间线） ----------
+-- 事件类型严格使用 LingXiEvent v1 契约（小写），payload 字段与前端
+-- cognitiveTimeline / evidenceExtract 对齐，确保回放与证据面板可渲染。
+-- 任务 1（15 条）、任务 2（15 条）、任务 3（15 条）、任务 4（4 条）、
+-- 任务 5（4 条）、任务 6（3 条），合计 56（>=50）。
 
 INSERT INTO ai_event
 (`id`, `task_id`, `subtask_id`, `sequence`, `event_type`, `status`, `payload_version`, `payload_json`, `source_event_id`, `occurred_at`) VALUES
-('DEMO-EVT-0001','DEMO-TASK-0001','DEMO-SUB-0001',1,'TASK_STARTED','RUNNING',1,'{"progress":0}','e-0001','2026-09-01 08:00:06.000'),
-('DEMO-EVT-0002','DEMO-TASK-0001','DEMO-SUB-0001',2,'TASK_DECOMPOSED','SUCCEEDED',1,'{"subtasks":2}','e-0002','2026-09-01 08:00:07.000'),
-('DEMO-EVT-0003','DEMO-TASK-0001','DEMO-SUB-0001',3,'AGENT_ASSIGNED','SUCCEEDED',1,'{"agent":"math"}','e-0003','2026-09-01 08:00:08.000'),
-('DEMO-EVT-0004','DEMO-TASK-0001','DEMO-SUB-0001',4,'SUBTASK_STARTED','RUNNING',1,'{"subtask":"DEMO-SUB-0001"}','e-0004','2026-09-01 08:00:09.000'),
-('DEMO-EVT-0005','DEMO-TASK-0001','DEMO-SUB-0001',5,'MODEL_CALL','SUCCEEDED',1,'{"model":"deepseek-chat","tokens":1200}','e-0005','2026-09-01 08:00:20.000'),
-('DEMO-EVT-0006','DEMO-TASK-0001','DEMO-SUB-0001',6,'SUBTASK_FINISHED','SUCCEEDED',1,'{}','e-0006','2026-09-01 08:00:40.000'),
-('DEMO-EVT-0007','DEMO-TASK-0001','DEMO-SUB-0002',7,'SUBTASK_STARTED','RUNNING',1,'{"subtask":"DEMO-SUB-0002"}','e-0007','2026-09-01 08:00:42.000'),
-('DEMO-EVT-0008','DEMO-TASK-0001','DEMO-SUB-0002',8,'MODEL_CALL','SUCCEEDED',1,'{"model":"deepseek-chat","tokens":980}','e-0008','2026-09-01 08:01:00.000'),
-('DEMO-EVT-0009','DEMO-TASK-0001','DEMO-SUB-0002',9,'SUBTASK_FINISHED','SUCCEEDED',1,'{}','e-0009','2026-09-01 08:01:15.000'),
-('DEMO-EVT-0010','DEMO-TASK-0001','DEMO-SUB-0002',10,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0001"}','e-0010','2026-09-01 08:01:16.000'),
-('DEMO-EVT-0011','DEMO-TASK-0001','NULL',11,'MESSAGE_PART','SUCCEEDED',1,'{"part":"assistant","token":"顶点式"}','e-0011','2026-09-01 08:01:17.000'),
-('DEMO-EVT-0012','DEMO-TASK-0001','NULL',12,'MESSAGE_FINISHED','SUCCEEDED',1,'{}','e-0012','2026-09-01 08:01:18.000'),
-('DEMO-EVT-0013','DEMO-TASK-0001','NULL',13,'TASK_PROGRESS','RUNNING',1,'{"progress":80}','e-0013','2026-09-01 08:01:19.000'),
-('DEMO-EVT-0014','DEMO-TASK-0001','NULL',14,'TASK_PROGRESS','RUNNING',1,'{"progress":95}','e-0014','2026-09-01 08:01:19.500'),
-('DEMO-EVT-0015','DEMO-TASK-0001','NULL',15,'TASK_FINISHED','SUCCEEDED',1,'{"progress":100}','e-0015','2026-09-01 08:01:20.000'),
-('DEMO-EVT-0016','DEMO-TASK-0001','DEMO-SUB-0001',16,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0009"}','e-0016','2026-09-01 08:01:21.000'),
-('DEMO-EVT-0017','DEMO-TASK-0001','DEMO-SUB-0002',17,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0002"}','e-0017','2026-09-01 08:01:22.000'),
-('DEMO-EVT-0018','DEMO-TASK-0001','DEMO-SUB-0002',18,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0012"}','e-0018','2026-09-01 08:01:23.000'),
+('DEMO-EVT-0001','DEMO-TASK-0001','DEMO-SUB-0001',1,'task_started','RUNNING',1,'{"questionSummary":"帮我求解二次函数 f(x)=x^2-4x+3 的最值并画草图"}','e-0001','2026-09-01 08:00:06.000'),
+('DEMO-EVT-0002','DEMO-TASK-0001','DEMO-SUB-0001',2,'task_decomposed','RUNNING',1,'{"taskType":"WORKFLOW","subtasks":["将二次函数化为顶点式","由顶点式求解最值"]}','e-0002','2026-09-01 08:00:07.000'),
+('DEMO-EVT-0003','DEMO-TASK-0001','DEMO-SUB-0001',3,'agent_assigned','RUNNING',1,'{"subtaskId":"DEMO-SUB-0001","agentType":"WORKFLOW","goal":"将二次函数化为顶点式"}','e-0003','2026-09-01 08:00:08.000'),
+('DEMO-EVT-0004','DEMO-TASK-0001','DEMO-SUB-0001',4,'node_progress','RUNNING',1,'{"nodeId":"start","nodeName":"用户输入","nodeType":"start","nodeStatus":"RUNNING"}','e-0004','2026-09-01 08:00:09.000'),
+('DEMO-EVT-0005','DEMO-TASK-0001','DEMO-SUB-0001',5,'node_progress','RUNNING',1,'{"nodeId":"llm","nodeName":"数学老师","nodeType":"llm","nodeStatus":"RUNNING"}','e-0005','2026-09-01 08:00:20.000'),
+('DEMO-EVT-0006','DEMO-TASK-0001','DEMO-SUB-0001',6,'retrieval_finished','RUNNING',1,'{"query":"二次函数最值","results":[{"title":"二次函数顶点式","score":0.96,"content":"配方法化简步骤摘要","source":"web"},{"title":"二次函数最值公式","score":0.94,"content":"当 a>0 时开口向上有最小值","source":"web"}]}','e-0006','2026-09-01 08:00:40.000'),
+('DEMO-EVT-0007','DEMO-TASK-0001','DEMO-SUB-0002',7,'agent_assigned','RUNNING',1,'{"subtaskId":"DEMO-SUB-0002","agentType":"WORKFLOW","goal":"由顶点式求解最值"}','e-0007','2026-09-01 08:00:42.000'),
+('DEMO-EVT-0008','DEMO-TASK-0001','DEMO-SUB-0002',8,'node_progress','RUNNING',1,'{"nodeId":"llm","nodeName":"数学老师","nodeType":"llm","nodeStatus":"SUCCEEDED","elapsedMs":1180}','e-0008','2026-09-01 08:01:00.000'),
+('DEMO-EVT-0009','DEMO-TASK-0001','DEMO-SUB-0002',9,'node_progress','RUNNING',1,'{"nodeId":"llm2","nodeName":"解题汇总","nodeType":"llm","nodeStatus":"SUCCEEDED","elapsedMs":760}','e-0009','2026-09-01 08:01:15.000'),
+('DEMO-EVT-0010','DEMO-TASK-0001','DEMO-SUB-0002',10,'answer_delta','RUNNING',1,'{"delta":"顶点式=(x-2)^2-1，"}','e-0010','2026-09-01 08:01:16.000'),
+('DEMO-EVT-0011','DEMO-TASK-0001',NULL,11,'answer_delta','RUNNING',1,'{"delta":"最小值-1，在 x=2 处取到。"}','e-0011','2026-09-01 08:01:17.000'),
+('DEMO-EVT-0012','DEMO-TASK-0001',NULL,12,'validation_finished','RUNNING',1,'{"valid":true,"score":0.95,"conclusion":"配方与最值结论正确","suggestions":["复习判别式符号","做 3 道同类型最值题"]}','e-0012','2026-09-01 08:01:18.000'),
+('DEMO-EVT-0013','DEMO-TASK-0001',NULL,15,'task_finished','SUCCEEDED',1,'{"finishReason":"workflow_finished","usage":{"total_tokens":2520,"total_price":0.0252}}','e-0013','2026-09-01 08:01:20.000'),
+('DEMO-EVT-0014','DEMO-TASK-0001','DEMO-SUB-0001',13,'node_progress','RUNNING',1,'{"nodeId":"start","nodeName":"用户输入","nodeType":"start","nodeStatus":"SUCCEEDED","elapsedMs":5}','e-0014','2026-09-01 08:01:18.500'),
+('DEMO-EVT-0015','DEMO-TASK-0001','DEMO-SUB-0002',14,'node_progress','RUNNING',1,'{"nodeId":"summarizer","nodeName":"汇总输出","nodeType":"llm","nodeStatus":"SUCCEEDED","elapsedMs":220}','e-0015','2026-09-01 08:01:19.000'),
 -- 任务 2（15 条）
-('DEMO-EVT-1001','DEMO-TASK-0002','DEMO-SUB-0003',1,'TASK_STARTED','RUNNING',1,'{"progress":0}','e-1001','2026-09-01 10:00:06.000'),
-('DEMO-EVT-1002','DEMO-TASK-0002','DEMO-SUB-0003',2,'TASK_DECOMPOSED','SUCCEEDED',1,'{"subtasks":2}','e-1002','2026-09-01 10:00:07.000'),
-('DEMO-EVT-1003','DEMO-TASK-0002','DEMO-SUB-0003',3,'AGENT_ASSIGNED','SUCCEEDED',1,'{"agent":"physics"}','e-1003','2026-09-01 10:00:08.000'),
-('DEMO-EVT-1004','DEMO-TASK-0002','DEMO-SUB-0003',4,'SUBTASK_STARTED','RUNNING',1,'{}','e-1004','2026-09-01 10:00:09.000'),
-('DEMO-EVT-1005','DEMO-TASK-0002','DEMO-SUB-0003',5,'MODEL_CALL','SUCCEEDED',1,'{"tokens":1500}','e-1005','2026-09-01 10:00:30.000'),
-('DEMO-EVT-1006','DEMO-TASK-0002','DEMO-SUB-0003',6,'SUBTASK_FINISHED','SUCCEEDED',1,'{}','e-1006','2026-09-01 10:00:55.000'),
-('DEMO-EVT-1007','DEMO-TASK-0002','DEMO-SUB-0004',7,'SUBTASK_STARTED','RUNNING',1,'{}','e-1007','2026-09-01 10:00:57.000'),
-('DEMO-EVT-1008','DEMO-TASK-0002','DEMO-SUB-0004',8,'MODEL_CALL','SUCCEEDED',1,'{"tokens":620}','e-1008','2026-09-01 10:01:00.000'),
-('DEMO-EVT-1009','DEMO-TASK-0002','DEMO-SUB-0004',9,'SUBTASK_FINISHED','SUCCEEDED',1,'{}','e-1009','2026-09-01 10:01:05.000'),
-('DEMO-EVT-1010','DEMO-TASK-0002','NULL',10,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0003"}','e-1010','2026-09-01 10:01:06.000'),
-('DEMO-EVT-1011','DEMO-TASK-0002','NULL',11,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0004"}','e-1011','2026-09-01 10:01:07.000'),
-('DEMO-EVT-1012','DEMO-TASK-0002','NULL',12,'MESSAGE_PART','SUCCEEDED',1,'{}','e-1012','2026-09-01 10:01:08.000'),
-('DEMO-EVT-1013','DEMO-TASK-0002','NULL',13,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0005"}','e-1013','2026-09-01 10:01:09.000'),
-('DEMO-EVT-1014','DEMO-TASK-0002','NULL',14,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0010"}','e-1014','2026-09-01 10:01:10.000'),
-('DEMO-EVT-1015','DEMO-TASK-0002','NULL',15,'TASK_FINISHED','SUCCEEDED',1,'{"progress":100}','e-1015','2026-09-01 10:01:10.000'),
--- 任务 3（20 条）
-('DEMO-EVT-2001','DEMO-TASK-0003','DEMO-SUB-0005',1,'TASK_STARTED','RUNNING',1,'{"progress":0}','e-2001','2026-09-02 14:00:06.000'),
-('DEMO-EVT-2002','DEMO-TASK-0003','DEMO-SUB-0005',2,'TASK_DECOMPOSED','SUCCEEDED',1,'{"subtasks":2}','e-2002','2026-09-02 14:00:07.000'),
-('DEMO-EVT-2003','DEMO-TASK-0003','DEMO-SUB-0005',3,'AGENT_ASSIGNED','SUCCEEDED',1,'{"agent":"chemistry"}','e-2003','2026-09-02 14:00:08.000'),
-('DEMO-EVT-2004','DEMO-TASK-0003','DEMO-SUB-0005',4,'SUBTASK_STARTED','RUNNING',1,'{}','e-2004','2026-09-02 14:00:09.000'),
-('DEMO-EVT-2005','DEMO-TASK-0003','DEMO-SUB-0005',5,'MODEL_CALL','SUCCEEDED',1,'{"tokens":2100}','e-2005','2026-09-02 14:00:40.000'),
-('DEMO-EVT-2006','DEMO-TASK-0003','DEMO-SUB-0005',6,'SUBTASK_FINISHED','SUCCEEDED',1,'{}','e-2006','2026-09-02 14:01:20.000'),
-('DEMO-EVT-2007','DEMO-TASK-0003','DEMO-SUB-0006',7,'SUBTASK_STARTED','RUNNING',1,'{}','e-2007','2026-09-02 14:01:22.000'),
-('DEMO-EVT-2008','DEMO-TASK-0003','DEMO-SUB-0006',8,'MODEL_CALL','SUCCEEDED',1,'{"tokens":780}','e-2008','2026-09-02 14:01:40.000'),
-('DEMO-EVT-2009','DEMO-TASK-0003','DEMO-SUB-0006',9,'SUBTASK_FINISHED','SUCCEEDED',1,'{}','e-2009','2026-09-02 14:01:50.000'),
-('DEMO-EVT-2010','DEMO-TASK-0003','NULL',10,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0006"}','e-2010','2026-09-02 14:01:55.000'),
-('DEMO-EVT-2011','DEMO-TASK-0003','NULL',11,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0007"}','e-2011','2026-09-02 14:01:56.000'),
-('DEMO-EVT-2012','DEMO-TASK-0003','NULL',12,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0008"}','e-2012','2026-09-02 14:01:57.000'),
-('DEMO-EVT-2013','DEMO-TASK-0003','NULL',13,'EVIDENCE_ADDED','SUCCEEDED',1,'{"evidence":"DEMO-EV-0011"}','e-2013','2026-09-02 14:01:58.000'),
-('DEMO-EVT-2014','DEMO-TASK-0003','NULL',14,'MESSAGE_PART','SUCCEEDED',1,'{}','e-2014','2026-09-02 14:01:59.000'),
-('DEMO-EVT-2015','DEMO-TASK-0003','NULL',15,'MESSAGE_FINISHED','SUCCEEDED',1,'{}','e-2015','2026-09-02 14:02:00.000'),
-('DEMO-EVT-2016','DEMO-TASK-0003','NULL',16,'TASK_PROGRESS','RUNNING',1,'{"progress":85}','e-2016','2026-09-02 14:02:01.000'),
-('DEMO-EVT-2017','DEMO-TASK-0003','NULL',17,'TASK_PROGRESS','RUNNING',1,'{"progress":98}','e-2017','2026-09-02 14:02:02.000'),
-('DEMO-EVT-2018','DEMO-TASK-0003','NULL',18,'TASK_PROGRESS','RUNNING',1,'{"progress":100}','e-2018','2026-09-02 14:02:03.000'),
-('DEMO-EVT-2019','DEMO-TASK-0003','NULL',19,'TASK_FINISHED','SUCCEEDED',1,'{}','e-2019','2026-09-02 14:02:04.000'),
-('DEMO-EVT-2020','DEMO-TASK-0003','DEMO-SUB-0005',20,'MODEL_CALL','SUCCEEDED',1,'{"tokens":410}','e-2020','2026-09-02 14:02:05.000'),
+('DEMO-EVT-1001','DEMO-TASK-0002','DEMO-SUB-0003',1,'task_started','RUNNING',1,'{"questionSummary":"对斜面上的物块做牛顿第二定律受力分析"}','e-1001','2026-09-01 10:00:06.000'),
+('DEMO-EVT-1002','DEMO-TASK-0002','DEMO-SUB-0003',2,'task_decomposed','RUNNING',1,'{"taskType":"WORKFLOW","subtasks":["受力分析并列出平衡方程","用牛顿第二定律推导加速度"]}','e-1002','2026-09-01 10:00:07.000'),
+('DEMO-EVT-1003','DEMO-TASK-0002','DEMO-SUB-0003',3,'agent_assigned','RUNNING',1,'{"subtaskId":"DEMO-SUB-0003","agentType":"WORKFLOW","goal":"受力分析并列出平衡方程"}','e-1003','2026-09-01 10:00:08.000'),
+('DEMO-EVT-1004','DEMO-TASK-0002','DEMO-SUB-0003',4,'node_progress','RUNNING',1,'{"nodeId":"start","nodeName":"用户输入","nodeType":"start","nodeStatus":"RUNNING"}','e-1004','2026-09-01 10:00:09.000'),
+('DEMO-EVT-1005','DEMO-TASK-0002','DEMO-SUB-0003',5,'node_progress','RUNNING',1,'{"nodeId":"llm","nodeName":"物理老师","nodeType":"llm","nodeStatus":"RUNNING"}','e-1005','2026-09-01 10:00:30.000'),
+('DEMO-EVT-1006','DEMO-TASK-0002','DEMO-SUB-0003',6,'retrieval_finished','RUNNING',1,'{"query":"斜面牛顿第二定律","results":[{"title":"牛顿第二定律","score":0.97,"content":"F=ma 在斜面坐标系下的分量","source":"web"},{"title":"斜面摩擦力","score":0.93,"content":"f=μN，N=mg·cosθ","source":"web"}]}','e-1006','2026-09-01 10:00:55.000'),
+('DEMO-EVT-1007','DEMO-TASK-0002','DEMO-SUB-0004',7,'agent_assigned','RUNNING',1,'{"subtaskId":"DEMO-SUB-0004","agentType":"WORKFLOW","goal":"用牛顿第二定律推导加速度"}','e-1007','2026-09-01 10:00:57.000'),
+('DEMO-EVT-1008','DEMO-TASK-0002','DEMO-SUB-0004',8,'node_progress','RUNNING',1,'{"nodeId":"llm","nodeName":"物理老师","nodeType":"llm","nodeStatus":"SUCCEEDED","elapsedMs":1050}','e-1008','2026-09-01 10:01:00.000'),
+('DEMO-EVT-1009','DEMO-TASK-0002','DEMO-SUB-0004',9,'node_progress','RUNNING',1,'{"nodeId":"llm2","nodeName":"公式推导","nodeType":"llm","nodeStatus":"SUCCEEDED","elapsedMs":430}','e-1009','2026-09-01 10:01:05.000'),
+('DEMO-EVT-1010','DEMO-TASK-0002',NULL,10,'answer_delta','RUNNING',1,'{"delta":"下滑分力 mg·sinθ，支持力 mg·cosθ，"}','e-1010','2026-09-01 10:01:06.000'),
+('DEMO-EVT-1011','DEMO-TASK-0002',NULL,11,'answer_delta','RUNNING',1,'{"delta":"摩擦力 μ·mg·cosθ。"}','e-1011','2026-09-01 10:01:07.000'),
+('DEMO-EVT-1012','DEMO-TASK-0002',NULL,12,'validation_finished','RUNNING',1,'{"valid":true,"score":0.92,"conclusion":"受力分解与摩擦力表达正确","suggestions":["核对临界滑动条件"]}','e-1012','2026-09-01 10:01:08.000'),
+('DEMO-EVT-1013','DEMO-TASK-0002','DEMO-SUB-0003',13,'node_progress','RUNNING',1,'{"nodeId":"start","nodeName":"用户输入","nodeType":"start","nodeStatus":"SUCCEEDED","elapsedMs":4}','e-1013','2026-09-01 10:01:09.000'),
+('DEMO-EVT-1014','DEMO-TASK-0002','DEMO-SUB-0004',14,'node_progress','RUNNING',1,'{"nodeId":"summarizer","nodeName":"汇总输出","nodeType":"llm","nodeStatus":"SUCCEEDED","elapsedMs":210}','e-1014','2026-09-01 10:01:10.000'),
+('DEMO-EVT-1015','DEMO-TASK-0002',NULL,15,'task_finished','SUCCEEDED',1,'{"finishReason":"workflow_finished","usage":{"total_tokens":2120,"total_price":0.0212}}','e-1015','2026-09-01 10:01:10.500'),
+-- 任务 3（15 条）
+('DEMO-EVT-2001','DEMO-TASK-0003','DEMO-SUB-0005',1,'task_started','RUNNING',1,'{"questionSummary":"分析锌与稀硫酸反应速率的决定因素"}','e-2001','2026-09-02 14:00:06.000'),
+('DEMO-EVT-2002','DEMO-TASK-0003','DEMO-SUB-0005',2,'task_decomposed','RUNNING',1,'{"taskType":"WORKFLOW","subtasks":["列出影响反应速率的因素","结合实验原理解释"]}','e-2002','2026-09-02 14:00:07.000'),
+('DEMO-EVT-2003','DEMO-TASK-0003','DEMO-SUB-0005',3,'agent_assigned','RUNNING',1,'{"subtaskId":"DEMO-SUB-0005","agentType":"WORKFLOW","goal":"列出影响反应速率的因素"}','e-2003','2026-09-02 14:00:08.000'),
+('DEMO-EVT-2004','DEMO-TASK-0003','DEMO-SUB-0005',4,'node_progress','RUNNING',1,'{"nodeId":"start","nodeName":"用户输入","nodeType":"start","nodeStatus":"RUNNING"}','e-2004','2026-09-02 14:00:09.000'),
+('DEMO-EVT-2005','DEMO-TASK-0003','DEMO-SUB-0005',5,'node_progress','RUNNING',1,'{"nodeId":"llm","nodeName":"化学老师","nodeType":"llm","nodeStatus":"RUNNING"}','e-2005','2026-09-02 14:00:40.000'),
+('DEMO-EVT-2006','DEMO-TASK-0003','DEMO-SUB-0005',6,'retrieval_finished','RUNNING',1,'{"query":"化学反应速率影响因素","results":[{"title":"化学反应速率","score":0.95,"content":"浓度升高反应速率加快","source":"web"},{"title":"温度影响","score":0.91,"content":"温度每升高10℃速率约翻倍","source":"web"},{"title":"接触面积","score":0.88,"content":"粉末状固体比块状反应更快","source":"web"}]}','e-2006','2026-09-02 14:01:20.000'),
+('DEMO-EVT-2007','DEMO-TASK-0003','DEMO-SUB-0006',7,'agent_assigned','RUNNING',1,'{"subtaskId":"DEMO-SUB-0006","agentType":"WORKFLOW","goal":"结合实验原理解释"}','e-2007','2026-09-02 14:01:22.000'),
+('DEMO-EVT-2008','DEMO-TASK-0003','DEMO-SUB-0006',8,'node_progress','RUNNING',1,'{"nodeId":"llm","nodeName":"化学老师","nodeType":"llm","nodeStatus":"SUCCEEDED","elapsedMs":1600}','e-2008','2026-09-02 14:01:40.000'),
+('DEMO-EVT-2009','DEMO-TASK-0003','DEMO-SUB-0006',9,'node_progress','RUNNING',1,'{"nodeId":"llm2","nodeName":"实验解释","nodeType":"llm","nodeStatus":"SUCCEEDED","elapsedMs":590}','e-2009','2026-09-02 14:01:50.000'),
+('DEMO-EVT-2010','DEMO-TASK-0003',NULL,10,'answer_delta','RUNNING',1,'{"delta":"浓度、温度、接触面积共同决定反应速率。"}','e-2010','2026-09-02 14:01:55.000'),
+('DEMO-EVT-2011','DEMO-TASK-0003',NULL,11,'validation_finished','RUNNING',1,'{"valid":true,"score":0.9,"conclusion":"因素归纳完整","suggestions":["补充催化剂影响"]}','e-2011','2026-09-02 14:01:56.000'),
+('DEMO-EVT-2012','DEMO-TASK-0003',NULL,12,'answer_delta','RUNNING',1,'{"delta":"（补充：加入催化剂也可显著加快反应。）"}','e-2012','2026-09-02 14:01:57.000'),
+('DEMO-EVT-2013','DEMO-TASK-0003','DEMO-SUB-0005',13,'node_progress','RUNNING',1,'{"nodeId":"start","nodeName":"用户输入","nodeType":"start","nodeStatus":"SUCCEEDED","elapsedMs":5}','e-2013','2026-09-02 14:01:58.000'),
+('DEMO-EVT-2014','DEMO-TASK-0003','DEMO-SUB-0006',14,'node_progress','RUNNING',1,'{"nodeId":"summarizer","nodeName":"汇总输出","nodeType":"llm","nodeStatus":"SUCCEEDED","elapsedMs":300}','e-2014','2026-09-02 14:01:59.000'),
+('DEMO-EVT-2015','DEMO-TASK-0003',NULL,15,'task_finished','SUCCEEDED',1,'{"finishReason":"workflow_finished","usage":{"total_tokens":3290,"total_price":0.0329}}','e-2015','2026-09-02 14:02:00.000'),
 -- 任务 4（失败，4 条）
-('DEMO-EVT-3001','DEMO-TASK-0004','NULL',1,'TASK_STARTED','RUNNING',1,'{"progress":0}','e-3001','2026-09-02 09:00:06.000'),
-('DEMO-EVT-3002','DEMO-TASK-0004','NULL',2,'MODEL_CALL','RUNNING',1,'{"tokens":2600}','e-3002','2026-09-02 09:00:20.000'),
-('DEMO-EVT-3003','DEMO-TASK-0004','NULL',3,'EXECUTION_INTERRUPTED','FAILED',1,'{"code":"DIFY_TIMEOUT"}','e-3003','2026-09-02 09:00:30.000'),
-('DEMO-EVT-3004','DEMO-TASK-0004','NULL',4,'TASK_FAILED','FAILED',1,'{"code":"DIFY_TIMEOUT","retryable":true}','e-3004','2026-09-02 09:00:30.500'),
--- 任务 5（失败，3 条）
-('DEMO-EVT-4001','DEMO-TASK-0005','NULL',1,'TASK_STARTED','RUNNING',1,'{"progress":0}','e-4001','2026-09-03 16:00:06.000'),
-('DEMO-EVT-4002','DEMO-TASK-0005','NULL',2,'MODEL_CALL','RUNNING',1,'{"tokens":1800}','e-4002','2026-09-03 16:00:12.000'),
-('DEMO-EVT-4003','DEMO-TASK-0005','NULL',3,'PARSE_ERROR','FAILED',1,'{}','e-4003','2026-09-03 16:00:20.000'),
+('DEMO-EVT-3001','DEMO-TASK-0004',NULL,1,'task_started','RUNNING',1,'{"questionSummary":"求解三重积分并在球坐标系下图示"}','e-3001','2026-09-02 09:00:06.000'),
+('DEMO-EVT-3002','DEMO-TASK-0004',NULL,2,'node_progress','RUNNING',1,'{"nodeId":"llm","nodeName":"数学老师","nodeType":"llm","nodeStatus":"RUNNING"}','e-3002','2026-09-02 09:00:20.000'),
+('DEMO-EVT-3003','DEMO-TASK-0004',NULL,3,'node_progress','FAILED',1,'{"nodeId":"llm","nodeName":"数学老师","nodeType":"llm","nodeStatus":"FAILED","elapsedMs":30000}','e-3003','2026-09-02 09:00:30.000'),
+('DEMO-EVT-3004','DEMO-TASK-0004',NULL,4,'task_error','FAILED',1,'{"code":"DIFY_TIMEOUT","message":"Dify 响应超时","retryable":true}','e-3004','2026-09-02 09:00:30.500'),
+-- 任务 5（失败，4 条）
+('DEMO-EVT-4001','DEMO-TASK-0005',NULL,1,'task_started','RUNNING',1,'{"questionSummary":"总结狭义相对论的时间膨胀，给出公式推导"}','e-4001','2026-09-03 16:00:06.000'),
+('DEMO-EVT-4002','DEMO-TASK-0005',NULL,2,'node_progress','RUNNING',1,'{"nodeId":"llm","nodeName":"物理老师","nodeType":"llm","nodeStatus":"RUNNING"}','e-4002','2026-09-03 16:00:12.000'),
+('DEMO-EVT-4003','DEMO-TASK-0005',NULL,3,'node_progress','FAILED',1,'{"nodeId":"llm","nodeName":"物理老师","nodeType":"llm","nodeStatus":"FAILED","elapsedMs":9000}','e-4003','2026-09-03 16:00:20.000'),
+('DEMO-EVT-4004','DEMO-TASK-0005',NULL,4,'task_error','FAILED',1,'{"code":"PARSE_ERROR","message":"事件解析失败","retryable":false}','e-4004','2026-09-03 16:00:20.500'),
 -- 任务 6（运行中，3 条）
-('DEMO-EVT-5001','DEMO-TASK-0006','NULL',1,'TASK_STARTED','RUNNING',1,'{"progress":0}','e-5001','2026-09-03 20:00:06.000'),
-('DEMO-EVT-5002','DEMO-TASK-0006','NULL',2,'TASK_DECOMPOSED','SUCCEEDED',1,'{}','e-5002','2026-09-03 20:00:08.000'),
-('DEMO-EVT-5003','DEMO-TASK-0006','NULL',3,'MODEL_CALL','RUNNING',1,'{"tokens":980}','e-5003','2026-09-03 20:00:30.000');
+('DEMO-EVT-5001','DEMO-TASK-0006',NULL,1,'task_started','RUNNING',1,'{"questionSummary":"设计一套测定中和反应热效应的实验方案"}','e-5001','2026-09-03 20:00:06.000'),
+('DEMO-EVT-5002','DEMO-TASK-0006',NULL,2,'task_decomposed','RUNNING',1,'{"taskType":"WORKFLOW","subtasks":["设计实验步骤","计算反应热"]}','e-5002','2026-09-03 20:00:08.000'),
+('DEMO-EVT-5003','DEMO-TASK-0006',NULL,3,'node_progress','RUNNING',1,'{"nodeId":"llm","nodeName":"化学老师","nodeType":"llm","nodeStatus":"RUNNING"}','e-5003','2026-09-03 20:00:30.000');
 
 -- =============================================================================
 -- 汇总（便于人工核对）：
@@ -206,6 +201,6 @@ INSERT INTO ai_event
 --   ai_message         6 条（3 user + 3 assistant）                      -     ✓
 --   ai_evidence       12 条                                            >= 10  ✓
 --   ai_model_call_log 18 条                                            >= 12  ✓
---   ai_event          63 条（18+15+20+4+3+3）                          >= 50  ✓
+--   ai_event          56 条（15+15+15+4+4+3，LingXiEvent v1 契约类型）      >= 50  ✓
 --   模型日志页 12+ 行真实数据；学情页有分布/趋势；回放有真实时间线。
 -- =============================================================================

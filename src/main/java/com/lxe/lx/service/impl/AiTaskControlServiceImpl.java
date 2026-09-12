@@ -109,8 +109,17 @@ public class AiTaskControlServiceImpl implements AiTaskControlService {
 
         AiSseSession session = new AiSseSession(sseTimeoutMs, heartbeatMs, taskScheduler);
         OrderedEventBuffer handoff = new OrderedEventBuffer(lastSequence, event -> {
-            session.send(event);
-            if (AiTaskStatus.isTerminal(event.getStatus())) {
+            // 连接已关闭（客户端断开，或终态事件已 complete）时静默跳过，
+            // 避免重放剩余事件抛异常导致 500。
+            if (session.isClosed()) {
+                return;
+            }
+            try {
+                session.send(event);
+            } catch (AiSseSession.SseConnectionClosedException closed) {
+                return;
+            }
+            if (isTerminalEvent(event)) {
                 session.complete();
             }
         });
@@ -206,8 +215,7 @@ public class AiTaskControlServiceImpl implements AiTaskControlService {
         return snapshot(taskMapper.findByIdAndUser(taskId, userId), subtaskMapper.findByTaskId(taskId));
     }
 
-    private void requireDependenciesSucceeded(AiSubtask target, List<AiSubtask> subtasks) {
-        List<String> dependencies;
+    private void requireDependenciesSucceeded(AiSubtask target, List<AiSubtask> subtasks) {        List<String> dependencies;
         try {
             dependencies = objectMapper.readValue(
                     StringUtils.defaultIfBlank(target.getDependencyJson(), "[]"),
@@ -264,6 +272,13 @@ public class AiTaskControlServiceImpl implements AiTaskControlService {
     private AiSubtask firstSubtask(String taskId) {
         List<AiSubtask> subtasks = subtaskMapper.findByTaskId(taskId);
         return subtasks.isEmpty() ? null : subtasks.get(0);
+    }
+
+    private boolean isTerminalEvent(LingXiEvent event) {
+        String type = event.getEventType();
+        return LingXiEventType.TASK_FINISHED.equals(type)
+                || LingXiEventType.TASK_ERROR.equals(type)
+                || LingXiEventType.EXECUTION_INTERRUPTED.equals(type);
     }
 
     private AiTaskSnapshot snapshot(AiTask task, List<AiSubtask> subtasks) {
