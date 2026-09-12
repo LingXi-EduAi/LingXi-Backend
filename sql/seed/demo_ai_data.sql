@@ -5,9 +5,8 @@
 -- 约定：演示用户 id 使用 demo-teacher-0001；会话/任务/事件/证据/日志使用
 --       DEMO 前缀的稳定 ID，防止与生产数据冲突。
 -- 注意：ai_* 表无外键约束，此处通过一致的 ID 自洽关联即可。
+-- 目标库由调用方指定，例如：mysql -h <host> -u <user> -p <db> < demo_ai_data.sql
 -- =============================================================================
-
-USE lingxi;
 
 -- ---------- 1. 清空演示数据（按依赖倒序） ----------
 DELETE FROM ai_model_call_log WHERE task_id LIKE 'DEMO%';
@@ -125,9 +124,9 @@ INSERT INTO ai_model_call_log
 ('DEMO-MCL-0017','DEMO-TASK-0006','summarizer','deepseek-chat',320,240,0.003200,NULL,'2026-09-03 20:00:38.000'),
 ('DEMO-MCL-0018','DEMO-TASK-0001','chat-llm','deepseek-chat',520,380,0.005200,NULL,'2026-09-01 08:00:45.000');
 
--- ---------- 8. AI 事件（54 条：展示每任务真实时间线） ----------
--- 任务 1（18 条）、任务 2（15 条）、任务 3（20 条）已由 event_sequence 对齐；
--- 为满足 >=50 要求，另行补充跨任务事件，事件数合计 54。
+-- ---------- 8. AI 事件（63 条：展示每任务真实时间线） ----------
+-- 任务 1（18 条）、任务 2（15 条）、任务 3（20 条）、任务 4（4 条）、
+-- 任务 5（3 条）、任务 6（3 条），事件数合计 63（>=50）。
 
 INSERT INTO ai_event
 (`id`, `task_id`, `subtask_id`, `sequence`, `event_type`, `status`, `payload_version`, `payload_json`, `source_event_id`, `occurred_at`) VALUES
@@ -207,6 +206,6 @@ INSERT INTO ai_event
 --   ai_message         6 条（3 user + 3 assistant）                      -     ✓
 --   ai_evidence       12 条                                            >= 10  ✓
 --   ai_model_call_log 18 条                                            >= 12  ✓
---   ai_event          54 条（18+15+20+4+3+3）                          >= 50  ✓
+--   ai_event          63 条（18+15+20+4+3+3）                          >= 50  ✓
 --   模型日志页 12+ 行真实数据；学情页有分布/趋势；回放有真实时间线。
 -- =============================================================================

@@ -103,7 +103,7 @@ COLLATE utf8mb4_general_ci;
 导入基础表：
 
 ```bash
-mysql -h <数据库地址> -u <数据库账号> -p lx < lx.sql
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < lx.sql
 ```
 
 `lx_add.sql` 包含两张作业表，同时包含演示数据：
@@ -116,8 +116,10 @@ lx_homework_submission
 开发演示环境可以完整导入：
 
 ```bash
-mysql -h <数据库地址> -u <数据库账号> -p lx < lx_add.sql
+mysql --default-character-set=utf8mb4 -h <数据库地址> -u <数据库账号> -p lx < lx_add.sql
 ```
+
+> 导入含中文的 SQL 时必须带 `--default-character-set=utf8mb4`，否则可能报 `ERROR 1366 Incorrect string value`。
 
 空白环境只执行 `lx_add.sql` 前面的两个 `CREATE TABLE`，不要执行后续 `INSERT INTO`。
 

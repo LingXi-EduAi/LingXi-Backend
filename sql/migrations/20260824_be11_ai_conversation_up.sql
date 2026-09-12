@@ -18,7 +18,7 @@ INSERT IGNORE INTO `ai_conversation`
 (`id`, `user_id`, `title`, `state`, `version`, `created_at`, `updated_at`)
 SELECT t.`conversation_id`, t.`user_id`,
        LEFT(COALESCE(
-           JSON_UNQUOTE(JSON_EXTRACT(t.`request_json`, '$.query')),
+           MAX(JSON_UNQUOTE(JSON_EXTRACT(t.`request_json`, '$.query'))),
            'Workflow 会话'
        ), 100),
        'ACTIVE', 1, MIN(t.`created_at`), MAX(t.`updated_at`)
